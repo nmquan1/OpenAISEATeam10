@@ -23,6 +23,7 @@ export const problemSchema = {
 export const errorSchemas = {
   400: problemSchema,
   401: problemSchema,
+  402: problemSchema,
   403: problemSchema,
   413: problemSchema,
   415: problemSchema,

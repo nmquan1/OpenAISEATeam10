@@ -36,3 +36,22 @@ end;
 $$;
 revoke all on function public.market_maker_consume_ai(integer) from public,anon,authenticated;
 grant execute on function public.market_maker_consume_ai(integer) to service_role;
+-- Per-client AI ledger: model, tokens, estimated cost and context of each paid call.
+create table if not exists public.market_maker_ai_calls (
+ id uuid primary key,
+ created_at timestamptz not null default now(),
+ client_id text not null,
+ run_id uuid not null,
+ model text not null,
+ request_id text not null,
+ prompt_version text not null,
+ input_tokens integer,
+ output_tokens integer,
+ cost_usd numeric,
+ attempts integer not null default 1,
+ context jsonb not null
+);
+create index if not exists market_maker_ai_calls_client_time on public.market_maker_ai_calls(client_id,created_at desc);
+alter table public.market_maker_ai_calls enable row level security;
+revoke all on public.market_maker_ai_calls from anon,authenticated;
+grant select,insert on public.market_maker_ai_calls to service_role;

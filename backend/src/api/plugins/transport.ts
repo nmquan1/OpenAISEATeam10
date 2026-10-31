@@ -35,7 +35,7 @@ export function registerTransport(app: FastifyInstance, { hosts, origins }: Tran
     if (request.method === 'OPTIONS')
       return reply
         .header('Access-Control-Allow-Methods', 'GET, POST, HEAD, OPTIONS')
-        .header('Access-Control-Allow-Headers', 'Content-Type')
+        .header('Access-Control-Allow-Headers', 'Content-Type, X-Client-Id')
         .header('Access-Control-Max-Age', '600')
         .code(204)
         .send();
@@ -50,6 +50,7 @@ export function registerTransport(app: FastifyInstance, { hosts, origins }: Tran
     else if (path === '/api/recommend') limit(`recommend:${request.ip}`, 10);
     else if (
       path === '/api/runs' ||
+      path === '/api/usage' ||
       path.startsWith('/api/runs/') ||
       path === '/api/history/validate'
     )
@@ -69,12 +70,13 @@ export function registerTransport(app: FastifyInstance, { hosts, origins }: Tran
           ? 504
           : (err.status ?? err.statusCode ?? 500);
     const detail = status === 500 ? 'Internal server error' : err.message;
-    if (status >= 500)
+    const internal = (err as { internal?: string }).internal;
+    if (status >= 500 || err.name === 'ProviderError')
       request.log.error(
         {
           err: { name: err.name, code: err.code },
           status,
-          ...(err.name === 'ProviderError' ? { detail: err.message } : {}),
+          ...(err.name === 'ProviderError' ? { detail: err.message, internal } : {}),
         },
         'Request failed',
       );

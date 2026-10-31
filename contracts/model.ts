@@ -146,6 +146,7 @@ export const RecommendationResultSchema = obj({
     output_tokens: Type.Union([integer(1_000_000_000), Type.Null()]),
   }),
   estimated_cost_usd: Type.Union([Type.Number({ minimum: 0 }), Type.Null()]),
+  provider_attempts: Type.Optional(integer(10)),
   decision_context: DecisionContextSchema,
   rejected_candidates: integer(1_000_000),
 });

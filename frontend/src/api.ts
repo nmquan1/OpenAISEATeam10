@@ -7,7 +7,7 @@ import {
   type EvaluationInput,
   type RecommendationRequest,
 } from '@market-maker/contracts';
-import type { Health, Run } from './types';
+import type { AiUsage, Health, Run } from './types';
 import {
   parseStrategyRequest,
   parsePortfolioResult,
@@ -26,6 +26,17 @@ export class ApiError extends Error {
   }
 }
 
+/** Anonymous per-browser id so the backend can track each person's AI trial budget. */
+function clientId() {
+  try {
+    let id = localStorage.getItem('market-maker-client-id');
+    if (!id) localStorage.setItem('market-maker-client-id', (id = crypto.randomUUID()));
+    return id;
+  } catch {
+    return undefined;
+  }
+}
+
 async function request(path: string, options: RequestInit): Promise<unknown> {
   let response: Response;
   try {
@@ -33,6 +44,7 @@ async function request(path: string, options: RequestInit): Promise<unknown> {
       ...options,
       headers: {
         ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(clientId() ? { 'X-Client-Id': clientId()! } : {}),
         ...options.headers,
       },
     });
@@ -93,6 +105,9 @@ export async function planPortfolio(body: StrategyRequest, signal: AbortSignal) 
       signal,
     }),
   );
+}
+export async function getUsage(signal: AbortSignal): Promise<AiUsage> {
+  return (await request('/usage', { signal })) as AiUsage;
 }
 export async function getRuns(signal: AbortSignal): Promise<Run[]> {
   const data = (await request('/runs', { signal })) as { runs?: Run[] };
