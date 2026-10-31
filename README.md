@@ -103,6 +103,12 @@ Trong phần bối cảnh, nhập **Tìm reference cho AI** rồi bấm **Xem re
 
 ### Đánh giá kỹ thuật AI
 
+- [So sánh 5 phương pháp và Recall@5 trên bộ case mới](docs/five-method-comparison.md)
+- [Root causes của đề xuất kém](docs/optimization-root-causes.md)
+- `npm run eval:methods`: thử các phương pháp bằng fixture offline; live cần `--live --repeats 2 --max-calls 40 --max-cost-usd 8`.
+- `npm run eval:retrieval:heldout`: so retrieval v1/v2 trên 13 query giữ riêng, không gọi model.
+- [Merchant pilot: dữ liệu, mẫu và cách chạy](docs/pilot-protocol.md) — chưa có kết quả merchant thật.
+
 - [Kết quả 72 lượt live và giới hạn diễn giải](docs/ai-evaluation-results.md)
 - [So sánh kiến trúc và bước tiếp theo](docs/ai-alternatives.md)
 - `npm run eval:technical`: fixture offline, chấm candidate riêng trước khi thêm baseline.

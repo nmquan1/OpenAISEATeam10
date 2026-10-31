@@ -27,6 +27,9 @@
     "eval:evidence": "tsx scripts/eval-evidence.ts",
     "eval:technical": "tsx scripts/eval-technical.ts",
     "eval:retrieval": "tsx scripts/evaluation/retrieval-audit.ts",
+    "eval:methods": "tsx scripts/evaluation/method-comparison.ts",
+    "eval:retrieval:heldout": "tsx scripts/evaluation/retrieval-heldout.ts",
+    "eval:pilot": "tsx scripts/evaluation/pilot.ts",
     "research": "tsx scripts/research/run.mjs"
   },
   "devDependencies": {

@@ -1,0 +1,558 @@
+{
+  "version": "method-cases.v1",
+  "scope": "8 new parent-authored synthetic held-out merchants, created after search/retrieval algorithms frozen. Frozen 100 VND lattice reference; not actual merchant outcomes.",
+  "cases": [
+    {
+      "id": "response-headroom",
+      "description": "Held-out synthetic scenario; demand response deliberately hypothetical, not calibrated from history.",
+      "stratum": "held_out",
+      "input": {
+        "product": {
+          "name": "Synthetic held-out merchant response-headroom",
+          "lines": [
+            {
+              "sku_id": "response-headroom",
+              "quantity": 1,
+              "unit_price_dong": 173000,
+              "unit_cost_dong": 82000,
+              "packaging_dong": 2000,
+              "stock_units": 365
+            }
+          ]
+        },
+        "voucher": {
+          "type": "percent",
+          "rate_bps": 1700,
+          "cap_dong": 39000,
+          "minimum_dong": 173000,
+          "seller_funding_bps": 10000
+        },
+        "economics": {
+          "fee_bps": 1300,
+          "tax_bps": 100,
+          "shipping_dong": 0,
+          "ads_dong": 0,
+          "return_rate_bps": 0,
+          "return_resale_bps": 10000,
+          "nonrefunded_fee_bps": 10000,
+          "return_shipping_dong": 0
+        },
+        "assumptions": {
+          "visits": 1800,
+          "cvr_bps": 280,
+          "traffic": {
+            "low_bps": 7000,
+            "base_bps": 10000,
+            "high_bps": 14000
+          },
+          "response_curve": [
+            {
+              "discount_bps": 0,
+              "cvr_multiplier_bps": 10000
+            },
+            {
+              "discount_bps": 1200,
+              "cvr_multiplier_bps": 18500
+            },
+            {
+              "discount_bps": 3500,
+              "cvr_multiplier_bps": 26000
+            }
+          ]
+        },
+        "constraints": {
+          "budget_dong": 3700000,
+          "quota": 210
+        },
+        "objective": "balanced"
+      },
+      "context": {
+        "seller_notes": "These response assumptions are synthetic. Keep funding fixed; optimize the selected objective using engine economics.",
+        "reference_query": "source:uci voucher geometry cap minimum"
+      }
+    },
+    {
+      "id": "thin-margin-safe",
+      "description": "Held-out synthetic scenario; demand response deliberately hypothetical, not calibrated from history.",
+      "stratum": "held_out",
+      "input": {
+        "product": {
+          "name": "Synthetic held-out merchant thin-margin-safe",
+          "lines": [
+            {
+              "sku_id": "thin-margin-safe",
+              "quantity": 1,
+              "unit_price_dong": 420000,
+              "unit_cost_dong": 345000,
+              "packaging_dong": 2000,
+              "stock_units": 820
+            }
+          ]
+        },
+        "voucher": {
+          "type": "percent",
+          "rate_bps": 1700,
+          "cap_dong": 39000,
+          "minimum_dong": 420000,
+          "seller_funding_bps": 10000
+        },
+        "economics": {
+          "fee_bps": 1300,
+          "tax_bps": 100,
+          "shipping_dong": 0,
+          "ads_dong": 0,
+          "return_rate_bps": 0,
+          "return_resale_bps": 10000,
+          "nonrefunded_fee_bps": 10000,
+          "return_shipping_dong": 0
+        },
+        "assumptions": {
+          "visits": 900,
+          "cvr_bps": 320,
+          "traffic": {
+            "low_bps": 7000,
+            "base_bps": 10000,
+            "high_bps": 14000
+          },
+          "response_curve": [
+            {
+              "discount_bps": 0,
+              "cvr_multiplier_bps": 10000
+            },
+            {
+              "discount_bps": 1200,
+              "cvr_multiplier_bps": 11200
+            },
+            {
+              "discount_bps": 3500,
+              "cvr_multiplier_bps": 14000
+            }
+          ]
+        },
+        "constraints": {
+          "budget_dong": 3700000,
+          "quota": 210
+        },
+        "objective": "safe"
+      },
+      "context": {
+        "seller_notes": "These response assumptions are synthetic. Keep funding fixed; optimize the selected objective using engine economics.",
+        "reference_query": "source:uci voucher geometry cap minimum"
+      }
+    },
+    {
+      "id": "minimum-upsell-unmodeled",
+      "description": "Held-out synthetic scenario; demand response deliberately hypothetical, not calibrated from history.",
+      "stratum": "held_out",
+      "input": {
+        "product": {
+          "name": "Synthetic held-out merchant minimum-upsell-unmodeled",
+          "lines": [
+            {
+              "sku_id": "minimum-upsell-unmodeled",
+              "quantity": 1,
+              "unit_price_dong": 190000,
+              "unit_cost_dong": 81000,
+              "packaging_dong": 2000,
+              "stock_units": 500
+            }
+          ]
+        },
+        "voucher": {
+          "type": "percent",
+          "rate_bps": 1700,
+          "cap_dong": 39000,
+          "minimum_dong": 250000,
+          "seller_funding_bps": 10000
+        },
+        "economics": {
+          "fee_bps": 1300,
+          "tax_bps": 100,
+          "shipping_dong": 0,
+          "ads_dong": 0,
+          "return_rate_bps": 0,
+          "return_resale_bps": 10000,
+          "nonrefunded_fee_bps": 10000,
+          "return_shipping_dong": 0
+        },
+        "assumptions": {
+          "visits": 2300,
+          "cvr_bps": 240,
+          "traffic": {
+            "low_bps": 7000,
+            "base_bps": 10000,
+            "high_bps": 14000
+          },
+          "response_curve": [
+            {
+              "discount_bps": 0,
+              "cvr_multiplier_bps": 10000
+            },
+            {
+              "discount_bps": 1200,
+              "cvr_multiplier_bps": 17000
+            },
+            {
+              "discount_bps": 3500,
+              "cvr_multiplier_bps": 23500
+            }
+          ]
+        },
+        "constraints": {
+          "budget_dong": 3700000,
+          "quota": 210
+        },
+        "objective": "growth"
+      },
+      "context": {
+        "seller_notes": "These response assumptions are synthetic. Keep funding fixed; optimize the selected objective using engine economics.",
+        "reference_query": "source:uci voucher geometry cap minimum"
+      }
+    },
+    {
+      "id": "stock-saturated",
+      "description": "Held-out synthetic scenario; demand response deliberately hypothetical, not calibrated from history.",
+      "stratum": "held_out",
+      "input": {
+        "product": {
+          "name": "Synthetic held-out merchant stock-saturated",
+          "lines": [
+            {
+              "sku_id": "stock-saturated",
+              "quantity": 1,
+              "unit_price_dong": 137000,
+              "unit_cost_dong": 47000,
+              "packaging_dong": 2000,
+              "stock_units": 35
+            }
+          ]
+        },
+        "voucher": {
+          "type": "percent",
+          "rate_bps": 1700,
+          "cap_dong": 39000,
+          "minimum_dong": 137000,
+          "seller_funding_bps": 10000
+        },
+        "economics": {
+          "fee_bps": 1300,
+          "tax_bps": 100,
+          "shipping_dong": 0,
+          "ads_dong": 0,
+          "return_rate_bps": 0,
+          "return_resale_bps": 10000,
+          "nonrefunded_fee_bps": 10000,
+          "return_shipping_dong": 0
+        },
+        "assumptions": {
+          "visits": 900,
+          "cvr_bps": 500,
+          "traffic": {
+            "low_bps": 7000,
+            "base_bps": 10000,
+            "high_bps": 14000
+          },
+          "response_curve": [
+            {
+              "discount_bps": 0,
+              "cvr_multiplier_bps": 10000
+            },
+            {
+              "discount_bps": 1200,
+              "cvr_multiplier_bps": 16000
+            },
+            {
+              "discount_bps": 3500,
+              "cvr_multiplier_bps": 22000
+            }
+          ]
+        },
+        "constraints": {
+          "budget_dong": 3700000,
+          "quota": 210
+        },
+        "objective": "balanced"
+      },
+      "context": {
+        "seller_notes": "These response assumptions are synthetic. Keep funding fixed; optimize the selected objective using engine economics.",
+        "reference_query": "source:uci voucher geometry cap minimum"
+      }
+    },
+    {
+      "id": "grocery-subsidized",
+      "description": "Held-out synthetic scenario; demand response deliberately hypothetical, not calibrated from history.",
+      "stratum": "held_out",
+      "input": {
+        "product": {
+          "name": "Bread and fluid milk basket",
+          "lines": [
+            {
+              "sku_id": "BREAD-MILK-BASKET",
+              "quantity": 1,
+              "unit_price_dong": 84000,
+              "unit_cost_dong": 39000,
+              "packaging_dong": 2000,
+              "stock_units": 600
+            }
+          ]
+        },
+        "voucher": {
+          "type": "percent",
+          "rate_bps": 1700,
+          "cap_dong": 39000,
+          "minimum_dong": 84000,
+          "seller_funding_bps": 2500
+        },
+        "economics": {
+          "fee_bps": 1300,
+          "tax_bps": 100,
+          "shipping_dong": 0,
+          "ads_dong": 0,
+          "return_rate_bps": 0,
+          "return_resale_bps": 10000,
+          "nonrefunded_fee_bps": 10000,
+          "return_shipping_dong": 0
+        },
+        "assumptions": {
+          "visits": 3200,
+          "cvr_bps": 350,
+          "traffic": {
+            "low_bps": 7000,
+            "base_bps": 10000,
+            "high_bps": 14000
+          },
+          "response_curve": [
+            {
+              "discount_bps": 0,
+              "cvr_multiplier_bps": 10000
+            },
+            {
+              "discount_bps": 1200,
+              "cvr_multiplier_bps": 18000
+            },
+            {
+              "discount_bps": 3500,
+              "cvr_multiplier_bps": 24000
+            }
+          ]
+        },
+        "constraints": {
+          "budget_dong": 3700000,
+          "quota": 210
+        },
+        "objective": "growth"
+      },
+      "context": {
+        "seller_notes": "These response assumptions are synthetic. Keep funding fixed; optimize the selected objective using engine economics.",
+        "reference_query": "source:cj bread milk bundle"
+      }
+    },
+    {
+      "id": "zero-budget-control",
+      "description": "Held-out synthetic scenario; demand response deliberately hypothetical, not calibrated from history.",
+      "stratum": "held_out",
+      "input": {
+        "product": {
+          "name": "Synthetic held-out merchant zero-budget-control",
+          "lines": [
+            {
+              "sku_id": "zero-budget-control",
+              "quantity": 1,
+              "unit_price_dong": 221000,
+              "unit_cost_dong": 94000,
+              "packaging_dong": 2000,
+              "stock_units": 550
+            }
+          ]
+        },
+        "voucher": {
+          "type": "percent",
+          "rate_bps": 1700,
+          "cap_dong": 39000,
+          "minimum_dong": 221000,
+          "seller_funding_bps": 10000
+        },
+        "economics": {
+          "fee_bps": 1300,
+          "tax_bps": 100,
+          "shipping_dong": 0,
+          "ads_dong": 0,
+          "return_rate_bps": 0,
+          "return_resale_bps": 10000,
+          "nonrefunded_fee_bps": 10000,
+          "return_shipping_dong": 0
+        },
+        "assumptions": {
+          "visits": 1700,
+          "cvr_bps": 310,
+          "traffic": {
+            "low_bps": 7000,
+            "base_bps": 10000,
+            "high_bps": 14000
+          },
+          "response_curve": [
+            {
+              "discount_bps": 0,
+              "cvr_multiplier_bps": 10000
+            },
+            {
+              "discount_bps": 1200,
+              "cvr_multiplier_bps": 18000
+            },
+            {
+              "discount_bps": 3500,
+              "cvr_multiplier_bps": 25000
+            }
+          ]
+        },
+        "constraints": {
+          "budget_dong": 0,
+          "quota": 210
+        },
+        "objective": "safe"
+      },
+      "context": {
+        "seller_notes": "These response assumptions are synthetic. Keep funding fixed; optimize the selected objective using engine economics.",
+        "reference_query": "source:uci voucher geometry cap minimum"
+      }
+    },
+    {
+      "id": "zero-conversion-control",
+      "description": "Held-out synthetic scenario; demand response deliberately hypothetical, not calibrated from history.",
+      "stratum": "held_out",
+      "input": {
+        "product": {
+          "name": "Synthetic held-out merchant zero-conversion-control",
+          "lines": [
+            {
+              "sku_id": "zero-conversion-control",
+              "quantity": 1,
+              "unit_price_dong": 112000,
+              "unit_cost_dong": 45000,
+              "packaging_dong": 2000,
+              "stock_units": 230
+            }
+          ]
+        },
+        "voucher": {
+          "type": "percent",
+          "rate_bps": 1700,
+          "cap_dong": 39000,
+          "minimum_dong": 112000,
+          "seller_funding_bps": 10000
+        },
+        "economics": {
+          "fee_bps": 1300,
+          "tax_bps": 100,
+          "shipping_dong": 0,
+          "ads_dong": 0,
+          "return_rate_bps": 0,
+          "return_resale_bps": 10000,
+          "nonrefunded_fee_bps": 10000,
+          "return_shipping_dong": 0
+        },
+        "assumptions": {
+          "visits": 1500,
+          "cvr_bps": 0,
+          "traffic": {
+            "low_bps": 7000,
+            "base_bps": 10000,
+            "high_bps": 14000
+          },
+          "response_curve": [
+            {
+              "discount_bps": 0,
+              "cvr_multiplier_bps": 10000
+            },
+            {
+              "discount_bps": 1200,
+              "cvr_multiplier_bps": 16000
+            },
+            {
+              "discount_bps": 3500,
+              "cvr_multiplier_bps": 23000
+            }
+          ]
+        },
+        "constraints": {
+          "budget_dong": 3700000,
+          "quota": 210
+        },
+        "objective": "balanced"
+      },
+      "context": {
+        "seller_notes": "These response assumptions are synthetic. Keep funding fixed; optimize the selected objective using engine economics.",
+        "reference_query": "source:uci voucher geometry cap minimum"
+      }
+    },
+    {
+      "id": "returns-sensitive",
+      "description": "Held-out synthetic scenario; demand response deliberately hypothetical, not calibrated from history.",
+      "stratum": "held_out",
+      "input": {
+        "product": {
+          "name": "Synthetic held-out merchant returns-sensitive",
+          "lines": [
+            {
+              "sku_id": "returns-sensitive",
+              "quantity": 1,
+              "unit_price_dong": 268000,
+              "unit_cost_dong": 173000,
+              "packaging_dong": 2000,
+              "stock_units": 380
+            }
+          ]
+        },
+        "voucher": {
+          "type": "percent",
+          "rate_bps": 1700,
+          "cap_dong": 39000,
+          "minimum_dong": 268000,
+          "seller_funding_bps": 10000
+        },
+        "economics": {
+          "fee_bps": 1300,
+          "tax_bps": 100,
+          "shipping_dong": 0,
+          "ads_dong": 17000,
+          "return_rate_bps": 3500,
+          "return_resale_bps": 6000,
+          "nonrefunded_fee_bps": 10000,
+          "return_shipping_dong": 25000
+        },
+        "assumptions": {
+          "visits": 2100,
+          "cvr_bps": 290,
+          "traffic": {
+            "low_bps": 7000,
+            "base_bps": 10000,
+            "high_bps": 14000
+          },
+          "response_curve": [
+            {
+              "discount_bps": 0,
+              "cvr_multiplier_bps": 10000
+            },
+            {
+              "discount_bps": 1200,
+              "cvr_multiplier_bps": 15500
+            },
+            {
+              "discount_bps": 3500,
+              "cvr_multiplier_bps": 21000
+            }
+          ]
+        },
+        "constraints": {
+          "budget_dong": 3700000,
+          "quota": 210
+        },
+        "objective": "balanced"
+      },
+      "context": {
+        "seller_notes": "These response assumptions are synthetic. Keep funding fixed; optimize the selected objective using engine economics.",
+        "reference_query": "source:uci voucher geometry cap minimum"
+      }
+    }
+  ]
+}

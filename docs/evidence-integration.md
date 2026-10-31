@@ -34,7 +34,7 @@ The response is:
 }
 ```
 
-The current retriever returns at most six cards and a 15,000-character serialized card budget, all from one source. It uses source filters (`source:cj`, `source:uci`), explicit topic rules and a small documented vocabulary of Vietnamese/English aliases. There are no embeddings or vector database. Unknown/conflicting source filters and unmatched topics yield an empty result. Payout-equivalent geometry records are deduplicated within a returned batch.
+The current retriever returns at most five cards and a 15,000-character serialized card budget, all from one source. Version 2 filters explicit profile intent and distinguishes canonical categories from related categories; unmatched qualifiers return no cards. It uses source filters (`source:cj`, `source:uci`), explicit topic rules and a small documented vocabulary of Vietnamese/English aliases. There are no embeddings or vector database. Unknown/conflicting source filters and unmatched topics yield an empty result. Payout-equivalent geometry records are deduplicated within a returned batch. The frozen legacy retriever is retained only for evaluation comparisons.
 
 `POST /api/recommend` adds optional `reference_evidence` to its response. The full result is saved through the normal run store and exported with the selected strategy. Older saved results without this field remain readable.
 

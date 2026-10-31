@@ -6,8 +6,8 @@ import {
 } from '../../../contracts/evidence.ts';
 import { loadEvidenceIndex, type EvidenceIndex } from './store.ts';
 
-export const RETRIEVAL_VERSION = 'evidence-lexical.v1';
-const MAX_CARDS = 6;
+export const RETRIEVAL_VERSION = 'evidence-lexical.v2';
+const MAX_CARDS = 5;
 const MAX_ITEMS_CHARACTERS = 15000;
 
 type Source = EvidenceCard['source_dataset'];
@@ -30,13 +30,26 @@ const hasPhrase = (text: string, phrase: string) => ` ${text} `.includes(` ${phr
 
 // These aliases identify reference categories only; they never map a merchant SKU to a foreign SKU.
 const concepts = [
-  { terms: ['cat litter', 'cat ve sinh', 'cat cho meo'], matches: ['cat litter'] },
-  { terms: ['cat food', 'thuc an meo', 'thuc an cho meo'], matches: ['cat food'] },
-  { terms: ['milk', 'sua'], matches: ['milk'] },
-  { terms: ['bread', 'banh mi'], matches: ['bread'] },
-  { terms: ['yogurt', 'yoghurt', 'sua chua'], matches: ['yogurt', 'yoghurt'] },
-  { terms: ['coffee', 'ca phe'], matches: ['coffee'] },
-  { terms: ['diapers', 'diaper', 'ta em be'], matches: ['diapers', 'diaper'] },
+  { terms: ['cat litter', 'cat ve sinh', 'cat cho meo'], categories: ['cat litter'] },
+  { terms: ['cat food', 'thuc an meo', 'thuc an cho meo'], categories: ['cat food'] },
+  {
+    terms: ['milk', 'fluid milk', 'fresh milk', 'sua', 'sua tuoi'],
+    categories: ['fluid milk products'],
+  },
+  { terms: ['canned milk', 'sua dong hop'], categories: ['canned milk'] },
+  { terms: ['milk by products', 'milk byproducts'], categories: ['milk by products'] },
+  {
+    terms: ['bread', 'fresh bread', 'baked bread', 'banh mi'],
+    categories: ['bread', 'baked bread buns rolls'],
+  },
+  {
+    terms: ['frozen bread', 'frozen dough', 'banh mi dong lanh'],
+    categories: ['frozen bread dough'],
+  },
+  { terms: ['yogurt', 'yoghurt', 'sua chua'], categories: ['yogurt'] },
+  { terms: ['coffee', 'ca phe'], categories: ['coffee'] },
+  { terms: ['coffee filters', 'coffee filter', 'giay loc ca phe'], categories: ['coffee filters'] },
+  { terms: ['diapers', 'diaper', 'ta em be'], categories: ['diapers disposables'] },
 ];
 function matchConcepts(text: string) {
   let remaining = text;
@@ -50,10 +63,10 @@ function matchConcepts(text: string) {
     matches.add(concept);
     remaining = ` ${remaining} `.replaceAll(` ${term} `, ' ').trim();
   }
-  return [...matches];
+  return { concepts: [...matches], remaining };
 }
 const stopWords = new Set(
-  'find reference references historical evidence data show compare strategy strategies recommendation recommend suggest voucher vouchers purchase purchases bundle bundling pair pairing copurchase co purchase buying together mua kem ket hop de xuat tham khao du lieu lich su tim cho ve cua va voi the a an for and or of in on to with'.split(
+  'please me about information details describe categories thong tin hay xem vui long toi find reference references historical evidence data show compare product category profile profiles ho so san pham nganh hang strategy strategies recommendation recommend suggest voucher vouchers purchase purchases bundle bundling pair pairing copurchase co purchase buying together mua kem ket hop de xuat tham khao du lieu lich su tim cho ve cua va voi the a an for and or of in on to with'.split(
     ' ',
   ),
 );
@@ -85,7 +98,9 @@ function queryPlan(query: string) {
   const geometry =
     hasPhrase(text, 'voucher geometry') || geometrySignals.filter(Boolean).length >= 2;
   const basket = hasPhrase(text, 'basket distribution') || hasPhrase(text, 'phan phoi gio hang');
-  const matchedConcepts = matchConcepts(text);
+  const matched = matchConcepts(text);
+  const matchedConcepts = matched.concepts;
+  const profile = ['profile', 'profiles', 'ho so'].some((term) => hasPhrase(text, term));
   const association = [
     'bundle',
     'bundling',
@@ -108,6 +123,10 @@ function queryPlan(query: string) {
     basket,
     matchedConcepts,
     association,
+    profile,
+    residualTokens: [...words(matched.remaining)].filter(
+      (word) => !stopWords.has(word) && !/^\d+$/.test(word) && word.length > 1,
+    ),
     tokens,
   };
 }
@@ -127,13 +146,20 @@ function scoreCard(card: EvidenceCard, plan: ReturnType<typeof queryPlan>): numb
   if (plan.basket) return card.kind === 'basket' ? 10 : 0;
   if (card.kind !== 'profile' && card.kind !== 'association') return 0;
   if (plan.association && card.kind !== 'association') return 0;
+  if (plan.profile && card.kind !== 'profile') return 0;
   const label = normalize(`${card.label} ${card.entity_ids.join(' ')}`);
   if (plan.matchedConcepts.length) {
     // Grocery aliases refer to the CJ category scope; gift descriptions containing milk/bread are not equivalent.
     if (card.source_dataset !== 'completejourney') return 0;
+    // Canonical category identity avoids matching milk by-products, frozen dough,
+    // or coffee equipment merely because their names contain a beverage/food token.
+    const entities = card.entity_ids.map(normalize);
     const matches = plan.matchedConcepts.filter((concept) =>
-      concept.matches.some((match) => hasPhrase(label, match)),
+      concept.categories.some((category) => entities.includes(category)),
     ).length;
+    // Recognizing one known term must not discard an unknown qualifier silently.
+    const labelWords = words(label);
+    if (plan.residualTokens.some((token) => !labelWords.has(token))) return 0;
     if (matches !== plan.matchedConcepts.length) return 0;
     return 20 + matches * 10 + (plan.association ? 5 : card.kind === 'profile' ? 3 : 0);
   }

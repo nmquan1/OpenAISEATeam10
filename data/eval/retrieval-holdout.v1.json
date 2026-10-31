@@ -1,0 +1,306 @@
+{
+  "version": "retrieval-holdout.v1",
+  "scope": "Parent-authored after v2 freeze; retriever implementer did not inspect it. Not externally blinded or representative of real traffic. Exact source/entity/kind oracle over full corpus; no output-derived labels.",
+  "queries": [
+    {
+      "id": "bread-profile",
+      "query": "source:cj hồ sơ bánh mì",
+      "source": "completejourney",
+      "kind": "profile",
+      "entity_type": "category",
+      "entity_groups": [
+        [
+          "BREAD",
+          "BAKED BREAD/BUNS/ROLLS"
+        ]
+      ],
+      "relevant_ids": [
+        "profile:completejourney:BAKED BREAD/BUNS/ROLLS",
+        "profile:completejourney:BREAD"
+      ],
+      "negative_control": false
+    },
+    {
+      "id": "catfood-profile",
+      "query": "source:cj profile cat food",
+      "source": "completejourney",
+      "kind": "profile",
+      "entity_type": "category",
+      "entity_groups": [
+        [
+          "CAT FOOD"
+        ]
+      ],
+      "relevant_ids": [
+        "profile:completejourney:CAT FOOD"
+      ],
+      "negative_control": false
+    },
+    {
+      "id": "natural-yogurt",
+      "query": "source:cj cho tôi xem thông tin sản phẩm sữa chua",
+      "source": "completejourney",
+      "kind": "profile",
+      "entity_type": "category",
+      "entity_groups": [
+        [
+          "YOGURT"
+        ]
+      ],
+      "relevant_ids": [
+        "profile:completejourney:YOGURT"
+      ],
+      "negative_control": false
+    },
+    {
+      "id": "fresh-milk-profile",
+      "query": "source:cj hồ sơ sữa tươi",
+      "source": "completejourney",
+      "kind": "profile",
+      "entity_type": "category",
+      "entity_groups": [
+        [
+          "FLUID MILK PRODUCTS"
+        ]
+      ],
+      "relevant_ids": [
+        "profile:completejourney:FLUID MILK PRODUCTS"
+      ],
+      "negative_control": false
+    },
+    {
+      "id": "coffee-vietnamese",
+      "query": "source:cj hồ sơ cà phê",
+      "source": "completejourney",
+      "kind": "profile",
+      "entity_type": "category",
+      "entity_groups": [
+        [
+          "COFFEE"
+        ]
+      ],
+      "relevant_ids": [
+        "profile:completejourney:COFFEE"
+      ],
+      "negative_control": false
+    },
+    {
+      "id": "diapers-natural",
+      "query": "source:cj thông tin tã em bé",
+      "source": "completejourney",
+      "kind": "profile",
+      "entity_type": "category",
+      "entity_groups": [
+        [
+          "DIAPERS & DISPOSABLES"
+        ]
+      ],
+      "relevant_ids": [
+        "profile:completejourney:DIAPERS & DISPOSABLES"
+      ],
+      "negative_control": false
+    },
+    {
+      "id": "cat-pair-natural",
+      "query": "source:cj kết hợp thức ăn cho mèo và cát vệ sinh",
+      "source": "completejourney",
+      "kind": "association",
+      "entity_type": "category",
+      "entity_groups": [
+        [
+          "CAT FOOD"
+        ],
+        [
+          "CAT LITTER"
+        ]
+      ],
+      "relevant_ids": [
+        "association:completejourney:1170f2a0ac601af4a28ea5e3"
+      ],
+      "negative_control": false
+    },
+    {
+      "id": "freshbread-milk-pair",
+      "query": "source:cj bánh mì và sữa tươi mua kèm",
+      "source": "completejourney",
+      "kind": "association",
+      "entity_type": "category",
+      "entity_groups": [
+        [
+          "BREAD",
+          "BAKED BREAD/BUNS/ROLLS"
+        ],
+        [
+          "FLUID MILK PRODUCTS"
+        ]
+      ],
+      "relevant_ids": [
+        "association:completejourney:4a92f14df411942e387ba1df",
+        "association:completejourney:5df586c3bcb59228899f6153",
+        "association:completejourney:b0297d3ac4c2ae6936d3e189"
+      ],
+      "negative_control": false
+    },
+    {
+      "id": "mechanics-vietnamese",
+      "query": "source:uci giảm phần trăm có trần và đơn tối thiểu",
+      "source": "uci_online_retail_ii",
+      "kind": "voucher_geometry",
+      "entity_type": "voucher",
+      "entity_groups": [],
+      "relevant_ids": [
+        "geometry:uci_r1000_c1512_m0",
+        "geometry:uci_r1000_c1512_m15123",
+        "geometry:uci_r1000_c1512_m30246",
+        "geometry:uci_r1000_c1512_m37808",
+        "geometry:uci_r1000_c3025_m0",
+        "geometry:uci_r1000_c3025_m15123",
+        "geometry:uci_r1000_c3025_m30246",
+        "geometry:uci_r1000_c3025_m37808",
+        "geometry:uci_r1000_c6049_m0",
+        "geometry:uci_r1000_c6049_m15123",
+        "geometry:uci_r1000_c6049_m30246",
+        "geometry:uci_r1000_c6049_m37808",
+        "geometry:uci_r1000_c756_m0",
+        "geometry:uci_r1000_c756_m15123",
+        "geometry:uci_r1000_c756_m30246",
+        "geometry:uci_r1000_c756_m37808",
+        "geometry:uci_r2000_c1512_m0",
+        "geometry:uci_r2000_c1512_m15123",
+        "geometry:uci_r2000_c1512_m30246",
+        "geometry:uci_r2000_c1512_m37808",
+        "geometry:uci_r2000_c3025_m0",
+        "geometry:uci_r2000_c3025_m15123",
+        "geometry:uci_r2000_c3025_m30246",
+        "geometry:uci_r2000_c3025_m37808",
+        "geometry:uci_r2000_c6049_m0",
+        "geometry:uci_r2000_c6049_m15123",
+        "geometry:uci_r2000_c6049_m30246",
+        "geometry:uci_r2000_c6049_m37808",
+        "geometry:uci_r2000_c756_m0",
+        "geometry:uci_r2000_c756_m15123",
+        "geometry:uci_r2000_c756_m30246",
+        "geometry:uci_r2000_c756_m37808",
+        "geometry:uci_r3000_c1512_m0",
+        "geometry:uci_r3000_c1512_m15123",
+        "geometry:uci_r3000_c1512_m30246",
+        "geometry:uci_r3000_c1512_m37808",
+        "geometry:uci_r3000_c3025_m0",
+        "geometry:uci_r3000_c3025_m15123",
+        "geometry:uci_r3000_c3025_m30246",
+        "geometry:uci_r3000_c3025_m37808",
+        "geometry:uci_r3000_c6049_m0",
+        "geometry:uci_r3000_c6049_m15123",
+        "geometry:uci_r3000_c6049_m30246",
+        "geometry:uci_r3000_c6049_m37808",
+        "geometry:uci_r3000_c756_m0",
+        "geometry:uci_r3000_c756_m15123",
+        "geometry:uci_r3000_c756_m30246",
+        "geometry:uci_r3000_c756_m37808",
+        "geometry:uci_r5000_c1512_m0",
+        "geometry:uci_r5000_c1512_m15123",
+        "geometry:uci_r5000_c1512_m30246",
+        "geometry:uci_r5000_c1512_m37808",
+        "geometry:uci_r5000_c3025_m0",
+        "geometry:uci_r5000_c3025_m15123",
+        "geometry:uci_r5000_c3025_m30246",
+        "geometry:uci_r5000_c3025_m37808",
+        "geometry:uci_r5000_c6049_m0",
+        "geometry:uci_r5000_c6049_m15123",
+        "geometry:uci_r5000_c6049_m30246",
+        "geometry:uci_r5000_c6049_m37808",
+        "geometry:uci_r5000_c756_m0",
+        "geometry:uci_r5000_c756_m15123",
+        "geometry:uci_r5000_c756_m30246",
+        "geometry:uci_r5000_c756_m37808",
+        "geometry:uci_r7000_c1512_m0",
+        "geometry:uci_r7000_c1512_m15123",
+        "geometry:uci_r7000_c1512_m30246",
+        "geometry:uci_r7000_c1512_m37808",
+        "geometry:uci_r7000_c3025_m0",
+        "geometry:uci_r7000_c3025_m15123",
+        "geometry:uci_r7000_c3025_m30246",
+        "geometry:uci_r7000_c3025_m37808",
+        "geometry:uci_r7000_c6049_m0",
+        "geometry:uci_r7000_c6049_m15123",
+        "geometry:uci_r7000_c6049_m30246",
+        "geometry:uci_r7000_c6049_m37808",
+        "geometry:uci_r7000_c756_m0",
+        "geometry:uci_r7000_c756_m15123",
+        "geometry:uci_r7000_c756_m30246",
+        "geometry:uci_r7000_c756_m37808",
+        "geometry:uci_r9000_c1512_m0",
+        "geometry:uci_r9000_c1512_m15123",
+        "geometry:uci_r9000_c1512_m30246",
+        "geometry:uci_r9000_c1512_m37808",
+        "geometry:uci_r9000_c3025_m0",
+        "geometry:uci_r9000_c3025_m15123",
+        "geometry:uci_r9000_c3025_m30246",
+        "geometry:uci_r9000_c3025_m37808",
+        "geometry:uci_r9000_c6049_m0",
+        "geometry:uci_r9000_c6049_m15123",
+        "geometry:uci_r9000_c6049_m30246",
+        "geometry:uci_r9000_c6049_m37808",
+        "geometry:uci_r9000_c756_m0",
+        "geometry:uci_r9000_c756_m15123",
+        "geometry:uci_r9000_c756_m30246",
+        "geometry:uci_r9000_c756_m37808"
+      ],
+      "negative_control": false
+    },
+    {
+      "id": "basket-vietnamese",
+      "query": "source:cj phân phối giỏ hàng",
+      "source": "completejourney",
+      "kind": "basket",
+      "entity_type": "basket",
+      "entity_groups": [],
+      "relevant_ids": [
+        "basket:completejourney"
+      ],
+      "negative_control": false
+    },
+    {
+      "id": "negative-skincare",
+      "query": "source:uci serum dưỡng da",
+      "source": "uci_online_retail_ii",
+      "kind": "profile",
+      "entity_type": "product",
+      "entity_groups": [
+        [
+          "SERUM_DUONG_DA_ABSENT"
+        ]
+      ],
+      "relevant_ids": [],
+      "negative_control": true
+    },
+    {
+      "id": "negative-electronics",
+      "query": "source:cj quantum graphics card",
+      "source": "completejourney",
+      "kind": "profile",
+      "entity_type": "category",
+      "entity_groups": [
+        [
+          "GRAPHICS_CARD_ABSENT"
+        ]
+      ],
+      "relevant_ids": [],
+      "negative_control": true
+    },
+    {
+      "id": "negative-qualified-milk",
+      "query": "source:cj organic milk powder profile",
+      "source": "completejourney",
+      "kind": "profile",
+      "entity_type": "category",
+      "entity_groups": [
+        [
+          "ORGANIC MILK POWDER"
+        ]
+      ],
+      "relevant_ids": [],
+      "negative_control": true
+    }
+  ]
+}

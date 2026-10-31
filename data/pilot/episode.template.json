@@ -1,0 +1,19 @@
+{
+  "schema_version": "merchant-pilot.v1",
+  "episode_id": "REPLACE_WITH_EPISODE_ID",
+  "data_origin": "merchant_observed",
+  "currency": "VND",
+  "assignment_unit": "customer",
+  "assignment_method": "randomized",
+  "eligibility_timing": "before_assignment",
+  "assignment_registry_complete": true,
+  "post_assignment_exclusions": 0,
+  "outcome_window_days": 30,
+  "returns_finalized": true,
+  "cost_basis": {
+    "version": "REPLACE_WITH_COST_VERSION",
+    "definition": "REPLACE_WITH_PRE_REGISTERED_ACCOUNTING_POLICY"
+  },
+  "assignments": [],
+  "rows": []
+}
