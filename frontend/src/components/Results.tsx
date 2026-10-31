@@ -221,6 +221,17 @@ export function Results({
                 : 'chưa có lịch sử'}{' '}
               · {result.decision_context.campaign_count} đợt sale · không tự áp dụng vào forecast.
             </p>
+            {result.decision_context.observed_cvr_bps !== null && (
+              <p className="hint" data-testid="ai-observed-history">
+                Lịch sử AI đã đọc: CVR quan sát {result.decision_context.observed_cvr_bps / 100}%
+                {result.decision_context.observed_aov_dong !== null &&
+                  ` · doanh thu / đơn ${money(result.decision_context.observed_aov_dong)}`}
+              </p>
+            )}
+            <p className="hint" data-testid="ai-candidate-audit">
+              Loại {count(result.rejected_candidates)} ứng viên AI không hợp lệ · prompt{' '}
+              {result.prompt_version}
+            </p>
             <ul>
               {result.decision_context.field_effects.map((effect, index) => (
                 <li key={index}>{effect}</li>
