@@ -104,12 +104,14 @@ export function ContextEditor({
               />
               <NumberField
                 label="Doanh thu (₫)"
+                money
                 value={campaign.revenue_dong}
                 max={1_000_000_000_000}
                 onChange={(value) => updateCampaign(index, 'revenue_dong', value)}
               />
               <NumberField
                 label="Chi voucher shop (₫)"
+                money
                 value={campaign.voucher_spend_dong}
                 max={1_000_000_000_000}
                 onChange={(value) => updateCampaign(index, 'voucher_spend_dong', value)}

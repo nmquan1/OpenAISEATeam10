@@ -1,4 +1,8 @@
-import { useId, useState } from 'react';
+import { useId, useLayoutEffect, useRef, useState } from 'react';
+
+const groupDigits = (value: number) => new Intl.NumberFormat('vi-VN').format(value);
+const digitsBefore = (text: string, caret: number) =>
+  text.slice(0, caret).replace(/\D/g, '').length;
 
 export function NumberField({
   label,
@@ -29,16 +33,28 @@ export function NumberField({
     value > max ||
     (step === 1 && !Number.isInteger(value));
   const showError = touched && invalid;
+  // Money is shown grouped (299.000) in a text field; keep the caret after the same digit.
+  const input = useRef<HTMLInputElement>(null);
+  const caretDigits = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    const element = input.current;
+    if (!money || !element || caretDigits.current === null) return;
+    let position = 0;
+    for (let seen = 0; position < element.value.length && seen < caretDigits.current; position++)
+      if (/\d/.test(element.value[position]!)) seen++;
+    element.setSelectionRange(position, position);
+    caretDigits.current = null;
+  });
   return (
     <label htmlFor={id}>
       {label}
       <input
         id={id}
-        type="number"
-        value={Number.isFinite(value) ? value : ''}
-        min={min}
-        max={max}
-        step={step}
+        ref={input}
+        {...(money
+          ? { type: 'text', inputMode: 'numeric' as const, autoComplete: 'off' }
+          : { type: 'number', min, max, step })}
+        value={Number.isFinite(value) ? (money ? groupDigits(value) : value) : ''}
         required
         disabled={disabled}
         onKeyDown={(event) => {
@@ -48,7 +64,13 @@ export function NumberField({
           const current = Number.isFinite(value) ? value : min;
           onChange(Math.max(min, Math.min(max, current + increment)));
         }}
-        onChange={(event) => onChange(event.target.value === '' ? NaN : event.target.valueAsNumber)}
+        onChange={(event) => {
+          if (!money) return onChange(event.target.value === '' ? NaN : event.target.valueAsNumber);
+          const text = event.target.value;
+          const digits = text.replace(/\D/g, '');
+          caretDigits.current = digitsBefore(text, event.target.selectionStart ?? text.length);
+          onChange(digits === '' ? NaN : Number(digits));
+        }}
         onBlur={() => setTouched(true)}
         aria-invalid={showError || undefined}
         aria-describedby={showError || hint ? `${id}-hint` : undefined}

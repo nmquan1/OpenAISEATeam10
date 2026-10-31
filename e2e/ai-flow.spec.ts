@@ -110,7 +110,9 @@ test('Mock AI: top 5 → dashboard → export → apply → export uses the appl
   await expect(page.getByRole('heading', { name: 'Bức tranh lợi nhuận của bạn' })).toBeVisible();
   await openStep(page, /Nhập số liệu/);
   await expect(page.getByLabel('Mức giảm / giỏ (₫)')).toHaveValue(
-    String(chosen.voucher.type === 'fixed' && chosen.voucher.amount_dong),
+    new Intl.NumberFormat('vi-VN').format(
+      chosen.voucher.type === 'fixed' ? chosen.voucher.amount_dong : NaN,
+    ),
   );
   await openStep(page, /Kết quả/);
 

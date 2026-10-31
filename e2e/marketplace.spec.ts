@@ -19,9 +19,9 @@ test('Merged marketplace fees, portfolio and currency keyboard controls work wit
   const price = page.getByLabel('Giá bán / SP (₫)', { exact: true });
   await price.focus();
   await page.keyboard.press('ArrowUp');
-  await expect(price).toHaveValue('300000');
+  await expect(price).toHaveValue('300.000');
   await page.keyboard.press('Shift+ArrowDown');
-  await expect(price).toHaveValue('290000');
+  await expect(price).toHaveValue('290.000');
   await price.fill('299001');
   const calculation = page.waitForResponse(
     (response) =>
@@ -60,4 +60,23 @@ test('Merged marketplace fees, portfolio and currency keyboard controls work wit
   ).toHaveCount(0);
   await expect(page.getByText(/Chi tiết phí Shopee \/ giỏ/)).toHaveCount(0);
   expect(errors).toEqual([]);
+});
+
+test('Money inputs show grouped digits and keep the caret while editing', async ({ page }) => {
+  await page.goto('/');
+  // Prefix match: a validation message inside the label extends the accessible name.
+  const budget = page.getByLabel(/^Ngân sách shop \(₫\)/);
+  await expect(budget).toHaveValue('10.000.000');
+  await budget.fill('25000000');
+  await expect(budget).toHaveValue('25.000.000');
+  // Type a digit in the middle: the separators move, the caret stays after the typed digit.
+  await budget.evaluate((element: HTMLInputElement) => element.setSelectionRange(2, 2));
+  await page.keyboard.type('9');
+  await expect(budget).toHaveValue('259.000.000');
+  expect(await budget.evaluate((element: HTMLInputElement) => element.selectionStart)).toBe(3);
+  await budget.fill('');
+  await budget.blur();
+  await expect(page.getByText('Nhập số nguyên từ 0 đến 1.000.000.000.')).toBeVisible();
+  await budget.fill('1.500.000 đ');
+  await expect(budget).toHaveValue('1.500.000');
 });
