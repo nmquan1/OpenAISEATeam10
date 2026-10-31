@@ -28,6 +28,10 @@ function render(){const {recommended:r,input:x,strategies:ss}=result;const b=r.s
  for(const btn of document.querySelectorAll('[data-scenario]'))btn.addEventListener('click',()=>{scenario=btn.dataset.scenario;render();});
 }
 form.addEventListener('submit',e=>{e.preventDefault();run();});
+// Money fields: arrow keys step 1.000 ₫ (Shift: 10.000 ₫) and results update while typing.
+const moneyFields=['price','cost','cap','minimum','budget','platformVoucher'];
+form.addEventListener('keydown',e=>{if(!moneyFields.includes(e.target.name)||!['ArrowUp','ArrowDown'].includes(e.key))return;e.preventDefault();const step=(e.shiftKey?10000:1000)*(e.key==='ArrowUp'?1:-1);e.target.value=Math.max(Number(e.target.min)||0,(Number(e.target.value)||0)+step);e.target.dispatchEvent(new Event('input',{bubbles:true}));});
+let live;form.addEventListener('input',e=>{if(e.target.type!=='number')return;clearTimeout(live);live=setTimeout(()=>{if(form.checkValidity())run();},150);});
 form.addEventListener('change',()=>{if(form.checkValidity())run();else{result=null;document.querySelector('#results').innerHTML='<div class="card">Đầu vào chưa hợp lệ. Sửa các trường rồi phân tích lại.</div>';}});
 document.querySelector('#reset').addEventListener('click',reset);
 document.querySelector('#export').addEventListener('click',()=>{if(!result||!form.reportValidity())return;run();if(!result)return;const blob=new Blob([JSON.stringify({application:'Market Maker',mode:'deterministic-demo',exportedAt:new Date().toISOString(),...result},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='market-maker-plan.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
