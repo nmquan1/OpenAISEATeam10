@@ -1,0 +1,12 @@
+{
+  "name": "@market-maker/frontend",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "engines": {"node": ">=22"},
+  "scripts": {
+    "build": "node ../scripts/build.mjs",
+    "dev": "npm run dev --workspace @market-maker/backend",
+    "check": "node ../scripts/check.mjs"
+  }
+}

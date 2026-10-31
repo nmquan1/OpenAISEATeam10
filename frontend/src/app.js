@@ -1,4 +1,4 @@
-import {defaults,evaluate} from './engine.js';
+import {defaults,evaluate} from '../engine/index.js';
 const form=document.querySelector('#inputs');
 const specs={
  'product-fields':[['price','Giá bán (₫)',1],['cost','Giá vốn / SP (₫)',0],['fee','Tổng phí (%)',0,100],['stock','Tồn kho (SP)',0]],
