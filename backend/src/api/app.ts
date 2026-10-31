@@ -16,6 +16,7 @@ import { registerRecommendRoutes, registerUsageRoutes } from './routers/recommen
 import { registerRunsRoutes } from './routers/runs.ts';
 import { registerHistoryRoutes } from './routers/history.ts';
 import { registerStrategyRoutes } from './routers/strategy.ts';
+import { registerEvidenceRoutes } from './routers/evidence.ts';
 const root = resolve(fileURLToPath(new URL('../../..', import.meta.url)));
 export interface AppOptions {
   host?: string;
@@ -86,6 +87,7 @@ export async function buildApp(options: AppOptions = {}) {
   registerRunsRoutes(app, context);
   registerHistoryRoutes(app, context);
   registerStrategyRoutes(app);
+  registerEvidenceRoutes(app);
   const frontend = options.frontendRoot ?? resolve(root, 'frontend/dist');
   if (existsSync(resolve(frontend, 'index.html'))) {
     await app.register(fastifyStatic, {

@@ -47,6 +47,7 @@ export function App() {
   const [context, setContext] = useState<DecisionContext>(initial.context);
   const [notice, setNotice] = useState(initial.notice);
   const [error, setError] = useState('');
+  const [aiError, setAiError] = useState('');
   const [status, setStatus] = useState('');
   const [draftStatus, setDraftStatus] = useState('');
   const [health, setHealth] = useState<Health | null>(null);
@@ -191,6 +192,7 @@ export function App() {
     aiController.current = controller;
     setAiBusy(true);
     setError('');
+    setAiError('');
     setStatus('AI đang tạo ứng viên. Engine sẽ tính lại trước khi hiển thị.');
     const timeout = setTimeout(() => controller.abort(), 125000);
     try {
@@ -206,10 +208,12 @@ export function App() {
       }
     } catch (reason) {
       if (!controller.signal.aborted) {
-        setError(message(reason));
+        setAiError(message(reason));
         setStatus('Yêu cầu AI chưa thành công. Mô phỏng trước đó vẫn dùng được.');
-      } else if (aiController.current === controller)
+      } else if (aiController.current === controller) {
+        setAiError('AI phản hồi quá lâu. Vui lòng thử lại.');
         setStatus('AI phản hồi quá lâu. Vui lòng thử lại.');
+      }
     } finally {
       clearTimeout(timeout);
       if (aiController.current === controller) {
@@ -376,6 +380,7 @@ export function App() {
           </aside>
           <div className="analysis-column">
             <ContextEditor
+              input={input}
               context={context}
               onChange={changeContext}
               onImportCsv={(file) => {
@@ -417,6 +422,23 @@ export function App() {
                   Ứng viên có AI
                 </button>
               </div>
+            )}
+            {aiError && (
+              <section
+                className="notice error"
+                aria-labelledby="ai-failure-heading"
+                data-testid="ai-failure-notice"
+              >
+                <h3 id="ai-failure-heading">
+                  Lần gọi AI gần nhất thất bại — chưa có đề xuất AI mới
+                </h3>
+                <p role="alert">{aiError}</p>
+                <p>
+                  {source === 'ai' && aiResult
+                    ? 'Bên dưới là kết quả AI từ lần thành công trước, không phải kết quả của lần gọi vừa lỗi.'
+                    : 'Bên dưới là mô phỏng của engine theo đầu vào hiện tại. “Không voucher” trong mô phỏng không phải là câu trả lời của AI.'}
+                </p>
+              </section>
             )}
             {result ? (
               <Results

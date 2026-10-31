@@ -22,17 +22,20 @@ jobs:
       - run: npm run check
       - run: npm run format:check
       - run: npm run eval:ai
+      - run: npm run eval:evidence -- --repeats 1
       - run: npm run research -- --dry-run
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - name: Package backend and contract source at the tested commit
-        run: tar -czf backend-source.tar.gz backend/src contracts package.json package-lock.json backend/package.json frontend/package.json tsconfig.json Dockerfile
+        run: tar -czf backend-source.tar.gz backend/src contracts data/evidence package.json package-lock.json backend/package.json frontend/package.json tsconfig.json Dockerfile
       - uses: actions/upload-artifact@v4
         with:
           name: market-maker-${{ github.sha }}
+          include-hidden-files: true
           path: |
             frontend/dist/
             backend-source.tar.gz
+            .local/evidence-eval/
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: always()

@@ -52,7 +52,8 @@ export function registerTransport(app: FastifyInstance, { hosts, origins }: Tran
       path === '/api/runs' ||
       path === '/api/usage' ||
       path.startsWith('/api/runs/') ||
-      path === '/api/history/validate'
+      path === '/api/history/validate' ||
+      path === '/api/evidence/retrieve'
     )
       limit(`history:${request.ip}`, 120);
   });

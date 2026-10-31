@@ -20,7 +20,9 @@
     "frontend/src/**/*.tsx",
     "frontend/vite.config.ts",
     "e2e/**/*.ts",
-    "playwright.config.ts"
+    "playwright.config.ts",
+    "scripts/evaluation/**/*.ts",
+    "scripts/eval-evidence.ts"
   ],
   "exclude": ["**/node_modules", "**/dist"]
 }

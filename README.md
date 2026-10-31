@@ -93,6 +93,14 @@ docs/                       Contracts, deployment, research and pitching source
 
 Xem [data contract](docs/data-contract.md) và [API docs](docs/api.md). CSV template chỉ có header; không giả dữ liệu bán hàng thật.
 
+## Reference dữ liệu cho AI
+
+Trong phần bối cảnh, nhập **Tìm reference cho AI** rồi bấm **Xem reference · không gọi AI** để kiểm tra nguồn/mẫu số/giới hạn trước. Để trống là tắt; không tự biến tên sản phẩm hay lịch sử campaign thành truy vấn. Gói local có 4.328 feature tổng hợp; chưa embedding hoặc dùng vector DB. Khi bấm AI, server gửi các reference phù hợp và lưu ID/version trong kết quả/export, giữ nguyên các giả định kinh tế của shop.
+
+- [Cách dùng UI/API, dữ liệu và tái tạo snapshot](docs/evidence-integration.md)
+- [Benchmark có/không evidence và giới hạn chi phí](docs/evidence-evaluation.md)
+- `npm run eval:evidence`: chạy fixture offline, không gọi OpenAI.
+
 ## Phạm vi đã biết
 
 Chế độ mặc định dùng fee/tax do người bán nhập. Chọn ngành hàng để dùng snapshot phí Shopee có nguồn và ngày ghi nhận; snapshot không tự xác minh lại khi chạy. Response curve do người dùng giả định, chưa được hiệu chuẩn hay chứng minh causal lift. Không hỗ trợ toàn bộ stacking, phân bổ lãi từng SKU hoặc tự publish voucher lên sàn. Thiếu credentials thì AI disabled. Tests fixture không xác minh chất lượng live model.

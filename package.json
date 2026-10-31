@@ -24,6 +24,7 @@
     "test:e2e": "playwright test",
     "test:ui": "playwright test --ui",
     "eval:ai": "tsx scripts/eval-ai.ts",
+    "eval:evidence": "tsx scripts/eval-evidence.ts",
     "research": "tsx scripts/research/run.mjs"
   },
   "devDependencies": {

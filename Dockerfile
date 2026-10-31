@@ -19,6 +19,7 @@ COPY contracts/package.json contracts/package.json
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/backend/src ./backend/src
 COPY --from=build /app/contracts ./contracts
+COPY --from=build /app/data/evidence ./data/evidence
 COPY --from=build /app/frontend/dist ./frontend/dist
 COPY --from=build /app/tsconfig.json ./tsconfig.json
 RUN mkdir .local && chown -R node:node /app

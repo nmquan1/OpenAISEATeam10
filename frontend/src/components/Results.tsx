@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { getOfferedStrategies, getSelectedOffer } from '../strategy-offers';
 import { StrategyDashboard } from './StrategyDashboard';
+import { EvidenceReferences } from './EvidenceReferences';
 import { MarketplaceFees } from './MarketplaceFees';
 import type { EvaluationResult, RecommendationResult, Voucher } from '@market-maker/contracts';
 import {
@@ -39,6 +40,18 @@ export function Results({
   const baseline = result.strategies.find((strategy) => strategy.discount_dong === 0);
   const ai = 'provider' in result;
   const contextUsed = ai ? result.context : context;
+  const objectiveLabel = {
+    safe: 'Lợi nhuận thấp nhất trong ba kịch bản',
+    balanced: '70% lợi nhuận cơ sở + 30% thấp nhất',
+    growth: 'Doanh thu cơ sở',
+  }[result.input.objective];
+  const basketSubtotal = result.input.product.lines.reduce(
+    (total, line) => total + line.unit_price_dong * line.quantity,
+    0,
+  );
+  const discountedStrategies = result.strategies.filter((strategy) => strategy.discount_dong > 0);
+  const baselineBaseScenario = baseline?.scenarios.find((item) => item.key === 'base');
+  const baselineLeads = baseline?.id === result.recommended.id;
   return (
     <section aria-labelledby="results-heading" className="results-section">
       <div className="section-heading">
@@ -50,6 +63,42 @@ export function Results({
         </div>
         <span className="pill">Mô phỏng theo giả định</span>
       </div>
+      <p className="notice" data-testid="result-source-label">
+        <strong>Nguồn kết quả: </strong>
+        {ai
+          ? 'AI tạo ứng viên; engine tính và xếp hạng cùng baseline.'
+          : 'Mô phỏng engine theo đầu vào hiện tại; chưa dùng kết quả AI trong bảng này.'}
+      </p>
+      {baselineLeads && (
+        <article className="card" data-testid="baseline-explanation">
+          <h3>Vì sao “Không voucher” đứng đầu?</h3>
+          {result.input.voucher.minimum_dong > basketSubtotal && (
+            <p>
+              Giỏ hiện tại {money(basketSubtotal)} thấp hơn minimum spend{' '}
+              {money(result.input.voucher.minimum_dong)}: voucher bạn nhập không đủ điều kiện, nên
+              giảm thực tế bằng 0đ. Mô hình giữ cố định giỏ hàng, không tự giả định khách mua thêm
+              để đạt minimum spend.
+            </p>
+          )}
+          {baselineBaseScenario?.stockout && (
+            <p>
+              Ngay cả khi không dùng voucher, kịch bản cơ sở đã chạm tồn kho (
+              {count(baselineBaseScenario.orders)} đơn). Giảm giá không thể tăng số đơn vượt sức
+              chứa tồn kho trong mô hình này.
+            </p>
+          )}
+          <p>
+            {discountedStrategies.length === 0
+              ? `Sau kiểm tra và gộp các cấu hình có cùng hiệu quả, chỉ còn ${result.strategies.length} phương án không giảm tiền thực tế. Chưa có phương án giảm giá hiệu lực để so sánh với baseline.`
+              : `Trong ${result.strategies.length} phương án đã tính, ${discountedStrategies.length} phương án có giảm giá không đạt điểm cao hơn baseline theo mục tiêu “${objectiveLabel}” dưới giả định hiện tại.`}
+          </p>
+          <p className="hint">
+            Kết quả chỉ áp dụng cho tập ứng viên đã kiểm tra; không chứng minh “không voucher” là
+            chiến lược tối ưu trên thị trường. Kiểm tra lại giỏ hàng, tồn kho và giả định
+            traffic/CVR trước khi quyết định.
+          </p>
+        </article>
+      )}
       <article className="card">
         <div className="section-heading">
           <h3>Top {offeredStrategies.length} chiến lược</h3>
@@ -172,18 +221,20 @@ export function Results({
       </article>
       <article className="card decision-context">
         <h3>Quyết định này dựa trên điều gì?</h3>
+        {ai && result.reference_evidence && result.reference_evidence.enabled && (
+          <details className="advanced">
+            <summary>Reference đã gửi cho AI</summary>
+            <p className="hint">
+              Đây là dữ liệu đã cung cấp trong request, không chứng minh AI đã dựa vào từng
+              reference. Bản export giữ ID và phiên bản để kiểm tra lại.
+            </p>
+            <EvidenceReferences result={result.reference_evidence} />
+          </details>
+        )}
         <dl className="context-facts">
           <div>
             <dt>Mục tiêu</dt>
-            <dd>
-              {
-                {
-                  safe: 'Lợi nhuận thấp nhất trong ba kịch bản',
-                  balanced: '70% lợi nhuận cơ sở + 30% thấp nhất',
-                  growth: 'Doanh thu cơ sở',
-                }[result.input.objective]
-              }
-            </dd>
+            <dd>{objectiveLabel}</dd>
           </div>
           <div>
             <dt>Dữ liệu & mô hình</dt>

@@ -1,6 +1,7 @@
 import { Type, type Static, type TSchema } from '@sinclair/typebox';
 import { Value } from '@sinclair/typebox/value';
 import { MarketplaceSchema, StrategyFeesSchema } from './marketplace.ts';
+import { RetrievalResultSchema, parseRetrievalResult } from './evidence.ts';
 export { feeCatalog, categories, type Category, type Programme } from './fee-catalog.ts';
 export { MarketplaceSchema, type Marketplace, type OrderFees } from './marketplace.ts';
 
@@ -75,6 +76,7 @@ export const HistoricalSummarySchema = obj({
 export const RecommendationContextSchema = obj({
   seller_notes: Type.String({ maxLength: 4_000 }),
   history: Type.Optional(HistoricalSummarySchema),
+  reference_query: Type.Optional(Type.String({ maxLength: 500 })),
 });
 export type RecommendationContext = Static<typeof RecommendationContextSchema>;
 export const EvaluationRequestSchema = obj({ input: EvaluationInputSchema });
@@ -147,6 +149,7 @@ export const RecommendationResultSchema = obj({
   }),
   estimated_cost_usd: Type.Union([Type.Number({ minimum: 0 }), Type.Null()]),
   provider_attempts: Type.Optional(integer(10)),
+  reference_evidence: Type.Optional(RetrievalResultSchema),
   decision_context: DecisionContextSchema,
   rejected_candidates: integer(1_000_000),
 });
@@ -280,6 +283,7 @@ export function parseRecommendationResult(value: unknown): RecommendationResult 
   const result = checked(RecommendationResultSchema, value);
   validateResult(result);
   parseRecommendationRequest({ input: result.input, context: result.context });
+  if (result.reference_evidence) parseRetrievalResult(result.reference_evidence);
   return result;
 }
 export const parseCandidateProposal = (value: unknown): CandidateProposal =>

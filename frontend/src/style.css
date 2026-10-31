@@ -913,3 +913,19 @@ footer .brand {
     gap: 14px;
   }
 }
+
+.reference-card {
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid #e7dccc;
+  border-radius: 8px;
+}
+.reference-card summary,
+.reference-card code,
+.reference-card .hint {
+  overflow-wrap: anywhere;
+}
+.reference-card th {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
