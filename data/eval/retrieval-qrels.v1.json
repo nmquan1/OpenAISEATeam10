@@ -1,0 +1,361 @@
+{
+  "version": "retrieval-qrels.v1",
+  "scope": "Manually specified binary relevance rules over the frozen full evidence corpus, not labels derived from retrieval outputs. Exact entity identity and requested card kind define relevance. This small author-selected suite is not representative or blind human judgement.",
+  "index_sha256": "bba6710b1f3399384df54c7939af0a775f24f1334298b8075d95ad48bacfc8e1",
+  "corpus_count": 4328,
+  "limitations": [
+    "Binary relevance uses source/entity/kind only; it does not measure numerical correctness, model use, or causal business utility.",
+    "Rules were authored with knowledge of the corpus and supported query vocabulary; easy aliases and English/Vietnamese pairs are correlated, not independent trials.",
+    "Profile intent excludes association cards even if topically related. Bread/milk intent excludes frozen bread and non-fluid milk; these are explicit judgement choices.",
+    "Recall counts each geometry record, including payout-equivalent records; intentional retriever deduplication lowers record-level recall.",
+    "General mechanics relevance includes all 96 hypothetical geometries; low recall at six is expected and not proof of poor user utility.",
+    "Zero relevant documents yields null precision/recall/nDCG metrics; negative controls are reported separately."
+  ],
+  "queries": [
+    {
+      "id": "cat-pair-en",
+      "query": "source:cj cat litter cat food bundle",
+      "negative_control": false,
+      "relevance_definition": "Exact CAT LITTER/CAT FOOD pair, either stored direction; other pet categories irrelevant.",
+      "rule": {
+        "source_dataset": "completejourney",
+        "kinds": [
+          "association"
+        ],
+        "entity_type": "category",
+        "entity_groups": [
+          [
+            "CAT LITTER"
+          ],
+          [
+            "CAT FOOD"
+          ]
+        ]
+      },
+      "relevant_ids": [
+        "association:completejourney:1170f2a0ac601af4a28ea5e3"
+      ]
+    },
+    {
+      "id": "cat-pair-vi",
+      "query": "source:cj cát vệ sinh thức ăn mèo mua kèm",
+      "negative_control": false,
+      "relevance_definition": "Exact CAT LITTER/CAT FOOD pair, either stored direction; other pet categories irrelevant.",
+      "rule": {
+        "source_dataset": "completejourney",
+        "kinds": [
+          "association"
+        ],
+        "entity_type": "category",
+        "entity_groups": [
+          [
+            "CAT LITTER"
+          ],
+          [
+            "CAT FOOD"
+          ]
+        ]
+      },
+      "relevant_ids": [
+        "association:completejourney:1170f2a0ac601af4a28ea5e3"
+      ]
+    },
+    {
+      "id": "bread-fluid-milk",
+      "query": "source:cj bread milk bundle",
+      "negative_control": false,
+      "relevance_definition": "Fresh/baked bread with fluid milk, either direction. Frozen dough, canned milk and ice cream are outside this intent.",
+      "rule": {
+        "source_dataset": "completejourney",
+        "kinds": [
+          "association"
+        ],
+        "entity_type": "category",
+        "entity_groups": [
+          [
+            "BREAD",
+            "BAKED BREAD/BUNS/ROLLS"
+          ],
+          [
+            "FLUID MILK PRODUCTS"
+          ]
+        ]
+      },
+      "relevant_ids": [
+        "association:completejourney:4a92f14df411942e387ba1df",
+        "association:completejourney:5df586c3bcb59228899f6153",
+        "association:completejourney:b0297d3ac4c2ae6936d3e189"
+      ]
+    },
+    {
+      "id": "milk-profile",
+      "query": "source:cj product profile milk",
+      "negative_control": false,
+      "relevance_definition": "Fluid milk category profile only; associations and other milk-labelled categories irrelevant.",
+      "rule": {
+        "source_dataset": "completejourney",
+        "kinds": [
+          "profile"
+        ],
+        "entity_type": "category",
+        "entity_groups": [
+          [
+            "FLUID MILK PRODUCTS"
+          ]
+        ]
+      },
+      "relevant_ids": [
+        "profile:completejourney:FLUID MILK PRODUCTS"
+      ]
+    },
+    {
+      "id": "yogurt-profile-en",
+      "query": "source:cj product profile yogurt",
+      "negative_control": false,
+      "relevance_definition": "Exact YOGURT category profile only; associations/milk not a yogurt profile.",
+      "rule": {
+        "source_dataset": "completejourney",
+        "kinds": [
+          "profile"
+        ],
+        "entity_type": "category",
+        "entity_groups": [
+          [
+            "YOGURT"
+          ]
+        ]
+      },
+      "relevant_ids": [
+        "profile:completejourney:YOGURT"
+      ]
+    },
+    {
+      "id": "yogurt-profile-vi",
+      "query": "source:cj hồ sơ sữa chua",
+      "negative_control": false,
+      "relevance_definition": "Exact YOGURT category profile only; associations/milk not a yogurt profile.",
+      "rule": {
+        "source_dataset": "completejourney",
+        "kinds": [
+          "profile"
+        ],
+        "entity_type": "category",
+        "entity_groups": [
+          [
+            "YOGURT"
+          ]
+        ]
+      },
+      "relevant_ids": [
+        "profile:completejourney:YOGURT"
+      ]
+    },
+    {
+      "id": "coffee-profile",
+      "query": "source:cj product profile coffee",
+      "negative_control": false,
+      "relevance_definition": "Exact COFFEE profile only; coffee filters and association cards irrelevant.",
+      "rule": {
+        "source_dataset": "completejourney",
+        "kinds": [
+          "profile"
+        ],
+        "entity_type": "category",
+        "entity_groups": [
+          [
+            "COFFEE"
+          ]
+        ]
+      },
+      "relevant_ids": [
+        "profile:completejourney:COFFEE"
+      ]
+    },
+    {
+      "id": "diapers-profile",
+      "query": "source:cj product profile diapers",
+      "negative_control": false,
+      "relevance_definition": "Exact DIAPERS & DISPOSABLES profile only; association cards irrelevant.",
+      "rule": {
+        "source_dataset": "completejourney",
+        "kinds": [
+          "profile"
+        ],
+        "entity_type": "category",
+        "entity_groups": [
+          [
+            "DIAPERS & DISPOSABLES"
+          ]
+        ]
+      },
+      "relevant_ids": [
+        "profile:completejourney:DIAPERS & DISPOSABLES"
+      ]
+    },
+    {
+      "id": "voucher-mechanics",
+      "query": "source:uci voucher geometry cap minimum",
+      "negative_control": false,
+      "relevance_definition": "All UCI hypothetical voucher replay records address general rate/cap/minimum mechanics; payout-equivalent records remain separate oracle IDs.",
+      "rule": {
+        "source_dataset": "uci_online_retail_ii",
+        "kinds": [
+          "voucher_geometry"
+        ],
+        "entity_type": "voucher",
+        "entity_groups": []
+      },
+      "relevant_ids": [
+        "geometry:uci_r1000_c1512_m0",
+        "geometry:uci_r1000_c1512_m15123",
+        "geometry:uci_r1000_c1512_m30246",
+        "geometry:uci_r1000_c1512_m37808",
+        "geometry:uci_r1000_c3025_m0",
+        "geometry:uci_r1000_c3025_m15123",
+        "geometry:uci_r1000_c3025_m30246",
+        "geometry:uci_r1000_c3025_m37808",
+        "geometry:uci_r1000_c6049_m0",
+        "geometry:uci_r1000_c6049_m15123",
+        "geometry:uci_r1000_c6049_m30246",
+        "geometry:uci_r1000_c6049_m37808",
+        "geometry:uci_r1000_c756_m0",
+        "geometry:uci_r1000_c756_m15123",
+        "geometry:uci_r1000_c756_m30246",
+        "geometry:uci_r1000_c756_m37808",
+        "geometry:uci_r2000_c1512_m0",
+        "geometry:uci_r2000_c1512_m15123",
+        "geometry:uci_r2000_c1512_m30246",
+        "geometry:uci_r2000_c1512_m37808",
+        "geometry:uci_r2000_c3025_m0",
+        "geometry:uci_r2000_c3025_m15123",
+        "geometry:uci_r2000_c3025_m30246",
+        "geometry:uci_r2000_c3025_m37808",
+        "geometry:uci_r2000_c6049_m0",
+        "geometry:uci_r2000_c6049_m15123",
+        "geometry:uci_r2000_c6049_m30246",
+        "geometry:uci_r2000_c6049_m37808",
+        "geometry:uci_r2000_c756_m0",
+        "geometry:uci_r2000_c756_m15123",
+        "geometry:uci_r2000_c756_m30246",
+        "geometry:uci_r2000_c756_m37808",
+        "geometry:uci_r3000_c1512_m0",
+        "geometry:uci_r3000_c1512_m15123",
+        "geometry:uci_r3000_c1512_m30246",
+        "geometry:uci_r3000_c1512_m37808",
+        "geometry:uci_r3000_c3025_m0",
+        "geometry:uci_r3000_c3025_m15123",
+        "geometry:uci_r3000_c3025_m30246",
+        "geometry:uci_r3000_c3025_m37808",
+        "geometry:uci_r3000_c6049_m0",
+        "geometry:uci_r3000_c6049_m15123",
+        "geometry:uci_r3000_c6049_m30246",
+        "geometry:uci_r3000_c6049_m37808",
+        "geometry:uci_r3000_c756_m0",
+        "geometry:uci_r3000_c756_m15123",
+        "geometry:uci_r3000_c756_m30246",
+        "geometry:uci_r3000_c756_m37808",
+        "geometry:uci_r5000_c1512_m0",
+        "geometry:uci_r5000_c1512_m15123",
+        "geometry:uci_r5000_c1512_m30246",
+        "geometry:uci_r5000_c1512_m37808",
+        "geometry:uci_r5000_c3025_m0",
+        "geometry:uci_r5000_c3025_m15123",
+        "geometry:uci_r5000_c3025_m30246",
+        "geometry:uci_r5000_c3025_m37808",
+        "geometry:uci_r5000_c6049_m0",
+        "geometry:uci_r5000_c6049_m15123",
+        "geometry:uci_r5000_c6049_m30246",
+        "geometry:uci_r5000_c6049_m37808",
+        "geometry:uci_r5000_c756_m0",
+        "geometry:uci_r5000_c756_m15123",
+        "geometry:uci_r5000_c756_m30246",
+        "geometry:uci_r5000_c756_m37808",
+        "geometry:uci_r7000_c1512_m0",
+        "geometry:uci_r7000_c1512_m15123",
+        "geometry:uci_r7000_c1512_m30246",
+        "geometry:uci_r7000_c1512_m37808",
+        "geometry:uci_r7000_c3025_m0",
+        "geometry:uci_r7000_c3025_m15123",
+        "geometry:uci_r7000_c3025_m30246",
+        "geometry:uci_r7000_c3025_m37808",
+        "geometry:uci_r7000_c6049_m0",
+        "geometry:uci_r7000_c6049_m15123",
+        "geometry:uci_r7000_c6049_m30246",
+        "geometry:uci_r7000_c6049_m37808",
+        "geometry:uci_r7000_c756_m0",
+        "geometry:uci_r7000_c756_m15123",
+        "geometry:uci_r7000_c756_m30246",
+        "geometry:uci_r7000_c756_m37808",
+        "geometry:uci_r9000_c1512_m0",
+        "geometry:uci_r9000_c1512_m15123",
+        "geometry:uci_r9000_c1512_m30246",
+        "geometry:uci_r9000_c1512_m37808",
+        "geometry:uci_r9000_c3025_m0",
+        "geometry:uci_r9000_c3025_m15123",
+        "geometry:uci_r9000_c3025_m30246",
+        "geometry:uci_r9000_c3025_m37808",
+        "geometry:uci_r9000_c6049_m0",
+        "geometry:uci_r9000_c6049_m15123",
+        "geometry:uci_r9000_c6049_m30246",
+        "geometry:uci_r9000_c6049_m37808",
+        "geometry:uci_r9000_c756_m0",
+        "geometry:uci_r9000_c756_m15123",
+        "geometry:uci_r9000_c756_m30246",
+        "geometry:uci_r9000_c756_m37808"
+      ]
+    },
+    {
+      "id": "basket-uci",
+      "query": "source:uci basket distribution",
+      "negative_control": false,
+      "relevance_definition": "Only the requested source aggregate basket profile is relevant.",
+      "rule": {
+        "source_dataset": "uci_online_retail_ii",
+        "kinds": [
+          "basket"
+        ],
+        "entity_type": "basket",
+        "entity_groups": []
+      },
+      "relevant_ids": [
+        "basket:uci_online_retail_ii"
+      ]
+    },
+    {
+      "id": "basket-cj",
+      "query": "source:cj basket distribution",
+      "negative_control": false,
+      "relevance_definition": "Only the requested source aggregate basket profile is relevant.",
+      "rule": {
+        "source_dataset": "completejourney",
+        "kinds": [
+          "basket"
+        ],
+        "entity_type": "basket",
+        "entity_groups": []
+      },
+      "relevant_ids": [
+        "basket:completejourney"
+      ]
+    },
+    {
+      "id": "serum-negative",
+      "query": "source:cj skincare serum",
+      "negative_control": true,
+      "relevance_definition": "No serum category profile exists in this pack; returning no cards is the expected negative control.",
+      "rule": {
+        "source_dataset": "completejourney",
+        "kinds": [
+          "profile"
+        ],
+        "entity_type": "category",
+        "entity_groups": [
+          [
+            "SKINCARE SERUM"
+          ]
+        ]
+      },
+      "relevant_ids": []
+    }
+  ]
+}

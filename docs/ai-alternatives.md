@@ -1,0 +1,59 @@
+# AI cho Market Maker: chọn cách làm theo bằng chứng
+
+Ngày rà soát: 2026-10-31. Tài liệu thiết kế; pilot kỹ thuật đã hoàn tất 72/72 lượt; xem report kết quả riêng. Tài liệu này không đổi model đang cấu hình `gpt-6-astra`. Khi đo phải lưu cả model yêu cầu và model thực tế trả về.
+
+**Ưu tiên MVP:** dùng engine + tìm kiếm voucher hữu hạn để chọn phương án; giữ reference từ khóa đang có; chỉ mở rộng vai trò LLM khi đánh giá cho thấy lợi ích cụ thể. LLM giải thích kết quả là hướng thử tiếp theo, chưa phải tính năng đã triển khai hoặc đã chứng minh tốt hơn.
+
+| Phương án                         | Giải quyết việc gì                                                  | Hiện trạng trong repo                                                                                     | Độ phức tạp / chi phí                                                                                       | Đo thành công bằng gì                                                                            | Bước tiếp theo                                                                                           |
+| --------------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| Engine + grid search              | Tìm cấu hình tốt theo response curve và ràng buộc đã nhập           | Engine chạy thật; grid 5 và grid rộng chỉ có trong eval, chưa thay luồng app                              | Thấp; không phí model, vẫn có CPU/hosting                                                                   | Điểm theo từng mục tiêu, khoảng cách tới grid rộng hơn, vi phạm ràng buộc, thời gian chạy        | Đưa search có giới hạn vào service, giữ baseline và top 5 khác hiệu quả kinh tế                          |
+| LLM đề xuất → engine chấm         | Đề xuất voucher từ ghi chú và bối cảnh                              | Đã có; tối đa 5 candidate, kiểm tra schema/funding, giữ baseline                                          | Vừa; phí token mỗi request, lỗi và độ trễ provider                                                          | Chất lượng candidate riêng, tỷ lệ tạo phương án mới tốt hơn baseline, chi phí / lần cải thiện    | So với grid cùng số proposal; chỉ giữ vai trò này nếu lợi ích đáng chi phí                               |
+| Search → giải thích bằng template | Giải thích vì sao minimum, budget, tồn kho làm phương án thắng/thua | UI đã giải thích một số trường hợp baseline; chưa có bộ giải thích đầy đủ cho mọi phương án               | Thấp; không phí model                                                                                       | Đúng số liệu, người dùng hiểu lý do và chọn được phương án                                       | Mở rộng template dựa trực tiếp kết quả engine trước                                                      |
+| Search → LLM giải thích           | Trình bày trade-off dễ hiểu theo câu hỏi người bán                  | **Đề xuất, chưa triển khai/đo**; provider hiện chỉ xuất voucher, không xuất diễn giải                     | Vừa; 1 request tùy chọn, cache theo hash kết quả                                                            | Sai số tiền = 0, không bịa nguồn/uplift, hiểu đúng của người dùng, thời gian ra quyết định       | Contract riêng: chỉ giải thích chiến lược đã tính, dẫn ID evidence; kiểm tra claim và cho phép bỏ qua AI |
+| RAG từ khóa trên feature pack     | Tìm reference phù hợp, giữ nguồn và giới hạn áp dụng                | Đã có 4.328 card, tối đa 6 card, có hash/version; không embedding                                         | Thấp; retrieval local không phí API, context gửi LLM vẫn có phí token                                       | Precision/recall trên nhãn giữ riêng, no-match đúng, sai nguồn/tiền tệ = 0                       | Bổ sung truy vấn tự nhiên chưa thấy, synonym và ca không liên quan trước khi đổi công nghệ               |
+| RAG semantic/vector hoặc hybrid   | Tìm cách diễn đạt gần nghĩa mà từ khóa bỏ sót                       | **Đề xuất, chưa triển khai/đo**                                                                           | Vừa; thêm embedding/index/vận hành; hosted có thể có hạn mức miễn phí, không đồng nghĩa toàn luồng miễn phí | Tăng recall mà giữ precision/no-match, chi phí và độ trễ chấp nhận được                          | Chỉ thử khi tập lỗi chứng minh lexical bỏ sót; giữ filter nguồn/currency và so trên cùng gold set        |
+| Merchant pilot + mô hình uplift   | Ước lượng tác động voucher lên mua hàng/lợi nhuận thực              | **Chưa có dữ liệu và đánh giá đủ**; history hiện là tổng hợp, reference nước ngoài không có causal uplift | Cao; thu thập và thử nghiệm thực tế tốn công, ngân sách voucher                                             | Lợi nhuận tăng thêm sau hủy/hoàn, khoảng bất định, hiệu quả trên giai đoạn/shop chưa dùng để fit | Thu exposure, treatment/control và outcome; kiểm tra thiết kế thử nghiệm trước khi học response curve    |
+
+Các đề xuất ưu tiên trong bảng là nhận định thiết kế từ phạm vi engine hiện tại. OpenAI Docs phân biệt lỗi retrieval với lỗi model dù đã nhận đúng context; thêm vector DB không tự sửa logic quyết định. Semantic search hữu ích khi từ ngữ không trùng; tài liệu có miễn phí storage đến 1 GB nhưng không chứng minh tổng chi phí ứng dụng bằng 0. [Optimizing LLM Accuracy](https://developers.openai.com/api/docs/guides/optimizing-llm-accuracy), [Retrieval](https://developers.openai.com/api/docs/guides/retrieval).
+
+## Những gì benchmark hiện tại chưa chứng minh
+
+- `evaluateVouchers()` luôn thêm baseline/current/measured và gộp theo discount + seller cost: điểm kết quả cuối không phải điểm candidate riêng của AI.
+- `baseline_preserved` kiểm tra cơ chế bảo vệ của hệ thống; không chứng minh provider hiểu bài toán, kể cả khi đạt 100%.
+- Constraint không vi phạm sau validator/engine chưa chứng minh proposal gốc an toàn: phải đếm candidate bị loại, sai funding, không đủ minimum và trùng hiệu quả.
+- Zero budget, hết tồn kho và giỏ dưới minimum có thể làm mọi kết quả bằng nhau; tách safety controls khỏi ca có cơ hội cải thiện khi đánh giá chất lượng.
+- Một giỏ cố định khiến nhiều tổ hợp rate/cap/minimum có cùng payout; engine này chưa đo hiệu ứng headline % hay việc khách mua thêm để đạt minimum.
+- Grid cũng dùng cùng engine: đây là so sánh khả năng tìm kiếm trong giả định, không phải phép kiểm độc lập độ đúng của forecast hoặc bằng chứng lợi nhuận thực tế.
+- Trong `eval-evidence.ts` cũ, nhánh `without_reference` bỏ cả `reference_query`: chênh lệch đo được gồm câu truy vấn và evidence; chưa cô lập tác động riêng của evidence. Suite `eval-technical.ts` mới đã giữ query giống nhau.
+- Card đã gửi cho provider chỉ chứng minh context được cung cấp; output voucher-only không cho phép chấm citation correctness hay độ đúng của diễn giải, nên các trường này phải là `null`.
+- Retrieval label hiện ở mức source/kind/label family và do người phát triển đặt: cần reviewer khác cùng tập query giữ riêng trước khi gọi là đánh giá độc lập.
+- Bộ đang có là 25 case tổng hợp; suite technical 12 case × 3 lần × 2 chế độ đã được triển khai riêng; chỉ ghi kết quả đã chạy khi có artifact hoàn tất.
+
+## Pilot kỹ thuật đã triển khai: 12 case × 3 lần × 2 chế độ
+
+1. **Khóa trước khi gọi model:** version 12 case, rubric, grid, prompt, model, giá token, giới hạn chi phí; ghi lý do chọn case. Giữ tập 25 case hiện có để regression, không chọn 12 case sau khi nhìn kết quả.
+2. **Phân tầng 12 case:** 5 quality (gồm 1 no-match control), 4 safety controls, 3 adversarial. Không phải mọi quality case đều có voucher thắng baseline. Headroom phải kiểm trước bằng search; không ép mọi ca có voucher thắng.
+3. **Tách mục tiêu:** có safe/balanced/growth trong ca chất lượng và báo riêng. Không gộp điểm doanh thu với điểm lợi nhuận thành một trung bình duy nhất.
+4. **Giữ hai request giống nhau trừ evidence:** cùng input, notes, history và `reference_query`; eval adapter chỉ đổi envelope evidence. Nếu vẫn dùng luồng bỏ query hiện có, đặt tên phép đo là tác động của toàn workflow reference.
+5. **Chạy theo cặp:** 3 lần mỗi case/chế độ, thứ tự được cân bằng hoặc random có seed đã lưu. Tối đa 72 lần gọi kế hoạch, không tự gọi bù lỗi; lưu timeout/429/502, usage và run chưa hoàn chỉnh.
+6. **Chấm hai tầng:** candidate riêng trước merge và kết quả sản phẩm sau merge. Lưu voucher gốc, hợp lệ/bị loại, effective discount, ID kinh tế, duplicate và điểm từng candidate; đừng chỉ lọc ID từ output đã dedup vì candidate trùng baseline đã biến mất.
+7. **So sánh công bằng:** báo grid 5 proposal và grid rộng hữu hạn; cùng funding/ràng buộc, cùng cách xử lý baseline. Candidate-only không tự thêm baseline; trường hợp không có candidate hợp lệ phải hiển thị thất bại, không thay bằng điểm baseline.
+8. **Báo kết quả theo case:** proposal hợp lệ, cải thiện so baseline, chênh lệch so grid, độ ổn định payout, lỗi, latency, token và chi phí. Với score âm/0, tránh chia phần trăm trực tiếp cho baseline.
+9. **Giới hạn suy luận:** 72 request chỉ tạo 36 cặp lặp trên 12 case; không phải 72 merchant độc lập. Ba lần lặp chỉ khảo sát biến động ban đầu; báo toàn bộ điểm theo case và không tuyên bố thống kê mạnh từ mẫu nhỏ.
+10. **Quyết định:** nếu reference không cải thiện candidate, vẫn có thể giữ preview hữu ích nhưng chưa quảng cáo nâng chất lượng đề xuất; nếu LLM không vượt search theo rubric đã khóa, ưu tiên thử vai trò giải thích. Giữ model hiện tại cho phép so này; đổi model cần một phép đo riêng.
+
+Suite và candidate-only grading đã triển khai trong `scripts/eval-technical.ts`; kế hoạch trên ghi cả mục tiêu thiết kế và giới hạn diễn giải. [Báo cáo kết quả](ai-evaluation-results.md) chỉ được tạo sau khi run hoàn tất. Cách tách metric theo nhiệm vụ, giữ edge/adversarial cases, ghi log và kiểm bằng người phù hợp với [OpenAI evaluation best practices](https://developers.openai.com/api/docs/guides/evaluation-best-practices).
+
+## Dữ liệu cần trước khi nói AI tăng doanh số
+
+Merchant pilot cần voucher rate/cap/minimum, SKU đủ điều kiện, stacking, nguồn tài trợ, assignment vào treatment/control, exposure và outcome sau hủy/hoàn. Giữ toàn bộ người đủ điều kiện theo nhóm được phân, không chỉ người redeem; xác định cửa sổ outcome và cách tính lợi nhuận trước khi chạy. Tồn kho/ngân sách dùng chung có thể gây tương tác giữa nhóm, nên thiết kế randomization phải xét điều này.
+
+Thử nghiệm ngẫu nhiên được thiết kế đúng hỗ trợ suy luận nhân quả; co-purchase của UCI/CJ không thay cho treatment/control của merchant. Nghiên cứu benchmark uplift dùng dữ liệu từ randomized trials, không chỉ transaction baskets. [Microsoft Research — Online Experimentation](https://www.microsoft.com/en-us/research/publication/online-experimentation-at-microsoft/), [Diemert et al. — Individual Treatment Effect and Uplift Benchmark](https://arxiv.org/abs/2111.10106).
+
+Không tự fit hoặc thay response curve của app từ reference ngoại quốc. Candidate-only eval đã có; bước miễn phí tiếp theo là bổ sung held-out cases và đưa grid search vào luồng sản phẩm; bước cần dữ liệu thật là hiệu chuẩn và đánh giá tác động kinh doanh.
+
+## Điểm đối chiếu code
+
+- [Engine và dedup theo payout](../backend/src/engine/index.ts), [service lọc candidate rồi merge baseline](../backend/src/agent/recommend.ts).
+- [Prompt chỉ trả voucher](../backend/src/agent/prompt.ts), [retrieval từ khóa](../backend/src/evidence/retrieve.ts).
+- [Eval hai chế độ](../scripts/eval-evidence.ts), [grid và metric](../scripts/evaluation/metrics.ts), [phạm vi suite hiện tại](evidence-evaluation.md).

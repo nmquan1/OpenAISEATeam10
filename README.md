@@ -101,6 +101,14 @@ Trong phần bối cảnh, nhập **Tìm reference cho AI** rồi bấm **Xem re
 - [Benchmark có/không evidence và giới hạn chi phí](docs/evidence-evaluation.md)
 - `npm run eval:evidence`: chạy fixture offline, không gọi OpenAI.
 
+### Đánh giá kỹ thuật AI
+
+- [Kết quả 72 lượt live và giới hạn diễn giải](docs/ai-evaluation-results.md)
+- [So sánh kiến trúc và bước tiếp theo](docs/ai-alternatives.md)
+- `npm run eval:technical`: fixture offline, chấm candidate riêng trước khi thêm baseline.
+- `npm run eval:retrieval`: precision/recall/nDCG trên qrels của corpus đầy đủ, không gọi model.
+- Chạy live cần bật rõ `--live --max-calls 72 --max-cost-usd 8`; giá token lấy từ `.env`, đây là trần ước tính, không phải hạn mức hóa đơn.
+
 ## Phạm vi đã biết
 
 Chế độ mặc định dùng fee/tax do người bán nhập. Chọn ngành hàng để dùng snapshot phí Shopee có nguồn và ngày ghi nhận; snapshot không tự xác minh lại khi chạy. Response curve do người dùng giả định, chưa được hiệu chuẩn hay chứng minh causal lift. Không hỗ trợ toàn bộ stacking, phân bổ lãi từng SKU hoặc tự publish voucher lên sàn. Thiếu credentials thì AI disabled. Tests fixture không xác minh chất lượng live model.

@@ -25,6 +25,8 @@
     "test:ui": "playwright test --ui",
     "eval:ai": "tsx scripts/eval-ai.ts",
     "eval:evidence": "tsx scripts/eval-evidence.ts",
+    "eval:technical": "tsx scripts/eval-technical.ts",
+    "eval:retrieval": "tsx scripts/evaluation/retrieval-audit.ts",
     "research": "tsx scripts/research/run.mjs"
   },
   "devDependencies": {

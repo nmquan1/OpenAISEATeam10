@@ -22,7 +22,8 @@
     "e2e/**/*.ts",
     "playwright.config.ts",
     "scripts/evaluation/**/*.ts",
-    "scripts/eval-evidence.ts"
+    "scripts/eval-evidence.ts",
+    "scripts/eval-technical.ts"
   ],
   "exclude": ["**/node_modules", "**/dist"]
 }
