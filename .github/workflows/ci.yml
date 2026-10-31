@@ -23,7 +23,10 @@ jobs:
         run: node --check scripts/serve.mjs && node --check scripts/build.mjs
       - name: Test and package prototype
         if: ${{ hashFiles('src/engine.js') != '' }}
-        run: npm run check
+        run: node --check src/engine.js && npm test
+      - name: Build UI
+        if: ${{ hashFiles('index.html') != '' }}
+        run: npm run build
       - uses: actions/upload-artifact@v4
         if: ${{ hashFiles('dist/index.html') != '' }}
         with:
