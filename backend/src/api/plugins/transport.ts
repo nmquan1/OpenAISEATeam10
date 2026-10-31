@@ -46,6 +46,7 @@ export function registerTransport(app: FastifyInstance, { hosts, origins }: Tran
         "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
       );
     if (path === '/api/evaluate') limit(`evaluate:${request.ip}`, 60);
+    else if (path === '/api/strategy') limit(`strategy:${request.ip}`, 60);
     else if (path === '/api/recommend') limit(`recommend:${request.ip}`, 10);
     else if (
       path === '/api/runs' ||

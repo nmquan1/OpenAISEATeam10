@@ -10,15 +10,11 @@ import {
   type Scenario,
 } from '../../../contracts/model.ts';
 import { Value } from '@sinclair/typebox/value';
+import { basketFees, feeCatalog, feeAssumptions } from './fees.ts';
+import { roundRatio } from './money.ts';
+export { roundRatio } from './money.ts';
 
 const BPS = 10_000n;
-/** The only rounding rule: exact half away from zero, integer VND. */
-export function roundRatio(numerator: bigint, denominator: bigint): bigint {
-  if (denominator <= 0n) throw new RangeError('Positive denominator required');
-  return numerator < 0n
-    ? -((-numerator + denominator / 2n) / denominator)
-    : (numerator + denominator / 2n) / denominator;
-}
 function number(value: bigint): number {
   const result = Number(value);
   if (!Number.isSafeInteger(result))
@@ -81,9 +77,14 @@ function scaled(voucher: Voucher): Voucher {
 function orderEconomics(input: EvaluationInput, amount: bigint, base: ReturnType<typeof basket>) {
   const e = input.economics;
   const sellerDiscount = rate(amount, input.voucher.seller_funding_bps);
-  const entitlement = base.gross - sellerDiscount;
-  const fee = rate(entitlement, e.fee_bps),
-    tax = rate(entitlement, e.tax_bps);
+  const catalogFees = input.marketplace
+    ? basketFees(input.product.lines, sellerDiscount, input.marketplace)
+    : undefined;
+  const entitlement = base.gross - sellerDiscount - BigInt(catalogFees?.cofund ?? 0);
+  const fee = catalogFees
+    ? BigInt(catalogFees.total - catalogFees.tax - catalogFees.cofund)
+    : rate(entitlement, e.fee_bps);
+  const tax = catalogFees ? BigInt(catalogFees.tax) : rate(entitlement, e.tax_bps);
   const sunk = base.packaging + BigInt(e.shipping_dong) + BigInt(e.ads_dong);
   const kept = entitlement - fee - tax - base.cost - sunk;
   const returned =
@@ -93,6 +94,7 @@ function orderEconomics(input: EvaluationInput, amount: bigint, base: ReturnType
     BigInt(e.return_shipping_dong);
   return {
     sellerDiscount,
+    catalogFees,
     profit: roundRatio(
       kept * BigInt(10_000 - e.return_rate_bps) + returned * BigInt(e.return_rate_bps),
       BPS,
@@ -182,6 +184,15 @@ export function evaluateVouchers(rawInput: EvaluationInput, vouchers: Voucher[])
       name: option.name,
       voucher: option.voucher,
       discount_dong: number(amount),
+      ...(withVoucher.catalogFees && withoutVoucher.catalogFees
+        ? {
+            fees: {
+              catalog_version: feeCatalog.version,
+              without_voucher: withoutVoucher.catalogFees,
+              with_voucher: withVoucher.catalogFees,
+            },
+          }
+        : {}),
       scenarios,
       base_profit_dong: baseProfit,
       worst_profit_dong: worst,
@@ -193,7 +204,7 @@ export function evaluateVouchers(rawInput: EvaluationInput, vouchers: Voucher[])
   );
   return parseEvaluationResult({
     schema_version: '2.0',
-    engine_version: '2.0.0',
+    engine_version: '2.1.0',
     mode: 'scenario_only',
     input,
     strategies,
@@ -201,7 +212,12 @@ export function evaluateVouchers(rawInput: EvaluationInput, vouchers: Voucher[])
     limitations: [
       'Scenario only: conversion response curves are seller assumptions, not calibrated causal effects or statistical forecasts.',
       'Fixed basket composition; orders use integer expected counts and stock is limited by the scarcest SKU. No basket substitution or line-level profit allocation.',
-      'Fees and taxes are configured aggregate rates on seller entitlement; this is not a verified Shopee fee schedule. No voucher stacking or automatic publication.',
+      ...(input.marketplace
+        ? feeAssumptions
+        : [
+            'Fees and taxes are configured aggregate rates on seller entitlement; this is not a verified Shopee fee schedule.',
+          ]),
+      'No automatic publication; platform co-funding is separate from the shop voucher budget.',
       'Money rounds half away from zero per order before campaign aggregation. Returns use expected per-order loss; voucher budget is conservatively not refunded on returns.',
       'Funding-limited uplift is proportional to funded redemptions; no time-of-day demand, customer segmentation or measured elasticity is inferred.',
     ],

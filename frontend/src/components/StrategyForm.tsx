@@ -1,6 +1,7 @@
 import type { FormEvent } from 'react';
 import type { EvaluationInput, Voucher } from '@market-maker/contracts';
 import { NumberField, PercentField } from './Field';
+import { MarketplaceFields } from './MarketplaceFields';
 
 type Props = {
   input: EvaluationInput;
@@ -84,17 +85,20 @@ export function StrategyForm({ input, onChange, onSubmit, busy, disabled }: Prop
             />
             <NumberField
               label="Giá bán / SP (₫)"
+              money
               value={line.unit_price_dong}
               min={1}
               onChange={(value) => setLine(index, 'unit_price_dong', value)}
             />
             <NumberField
               label="Giá vốn / SP (₫)"
+              money
               value={line.unit_cost_dong}
               onChange={(value) => setLine(index, 'unit_cost_dong', value)}
             />
             <NumberField
               label="Đóng gói / SP (₫)"
+              money
               value={line.packaging_dong}
               onChange={(value) => setLine(index, 'packaging_dong', value)}
             />
@@ -184,6 +188,7 @@ export function StrategyForm({ input, onChange, onSubmit, busy, disabled }: Prop
               />
               <NumberField
                 label="Giảm tối đa / giỏ (₫)"
+                money
                 value={input.voucher.cap_dong}
                 onChange={(cap_dong) => updateVoucher({ cap_dong })}
               />
@@ -191,12 +196,14 @@ export function StrategyForm({ input, onChange, onSubmit, busy, disabled }: Prop
           ) : (
             <NumberField
               label="Mức giảm / giỏ (₫)"
+              money
               value={input.voucher.amount_dong}
               onChange={(amount_dong) => updateVoucher({ amount_dong })}
             />
           )}
           <NumberField
             label="Giỏ tối thiểu (₫)"
+            money
             value={input.voucher.minimum_dong}
             onChange={(minimum_dong) => updateVoucher({ minimum_dong })}
           />
@@ -208,6 +215,7 @@ export function StrategyForm({ input, onChange, onSubmit, busy, disabled }: Prop
           />
           <NumberField
             label="Ngân sách shop (₫)"
+            money
             value={input.constraints.budget_dong}
             onChange={(budget_dong) =>
               onChange({ ...input, constraints: { ...input.constraints, budget_dong } })
@@ -223,10 +231,13 @@ export function StrategyForm({ input, onChange, onSubmit, busy, disabled }: Prop
           />
         </div>
       </fieldset>
+      <MarketplaceFields input={input} onChange={onChange} />
       <details className="advanced">
         <summary>Phí, thuế, ship và hoàn hàng</summary>
         <p className="hint">
-          Các tỷ lệ là giả định do bạn nhập; ứng dụng chưa tự lấy bảng phí sàn.
+          {input.marketplace
+            ? 'Phí tổng hợp và thuế nhập tay đang tắt vì dùng catalog Shopee. Các chi phí khác vẫn áp dụng.'
+            : 'Phí và thuế là giả định do bạn nhập. Chọn ngành hàng ở trên nếu muốn dùng catalog Shopee.'}
         </p>
         <div className="field-grid">
           {(Object.keys(economicsLabels) as (keyof EvaluationInput['economics'])[]).map((key) => {
@@ -237,9 +248,13 @@ export function StrategyForm({ input, onChange, onSubmit, busy, disabled }: Prop
                 onChange({ ...input, economics: { ...input.economics, [key]: value } }),
             };
             return key.endsWith('_bps') ? (
-              <PercentField key={key} {...props} />
+              <PercentField
+                key={key}
+                {...props}
+                disabled={Boolean(input.marketplace) && ['fee_bps', 'tax_bps'].includes(key)}
+              />
             ) : (
-              <NumberField key={key} {...props} />
+              <NumberField key={key} {...props} money />
             );
           })}
         </div>
@@ -390,7 +405,10 @@ export function StrategyForm({ input, onChange, onSubmit, busy, disabled }: Prop
       <button className="primary full-width" disabled={busy || disabled}>
         {busy ? 'Đang tính…' : 'Phân tích chiến lược'}
       </button>
-      <p className="hint">Số liệu được server tính lại. Không tự áp dụng voucher lên Shopee.</p>
+      <p className="hint">
+        Số liệu được server tính lại khi nhập. Trường tiền: ↑/↓ đổi 1.000đ, giữ Shift đổi 10.000đ;
+        vẫn nhập được từng đồng. Không tự áp dụng voucher lên Shopee.
+      </p>
     </form>
   );
 }

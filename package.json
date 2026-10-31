@@ -23,7 +23,8 @@
     "check": "npm run typecheck && npm run lint && npm test && npm run build",
     "test:e2e": "playwright test",
     "test:ui": "playwright test --ui",
-    "eval:ai": "tsx scripts/eval-ai.ts"
+    "eval:ai": "tsx scripts/eval-ai.ts",
+    "research": "tsx scripts/research/run.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

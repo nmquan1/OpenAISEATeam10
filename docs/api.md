@@ -6,14 +6,15 @@ This MVP has one **shared workspace and no login**. Every caller can read the sa
 
 ## Routes
 
-| Method | Path                    | Body / result                                                                                               |
-| ------ | ----------------------- | ----------------------------------------------------------------------------------------------------------- |
-| GET    | `/api/health`           | `{status, schema_version, mode, aiConfigured, modelConfigured}`; configuration flags contain no credentials |
-| POST   | `/api/evaluate`         | `{input}` → deterministic evaluation; saves the complete input/result                                       |
-| POST   | `/api/recommend`        | `{input, context}` → provider candidates ranked by the same engine; saves input/result/AI metadata          |
-| POST   | `/api/history/validate` | `{csv}` → `{source:"user_reported", campaigns:[...]}`; no automatic forecast calibration                    |
-| GET    | `/api/runs`             | `{runs:[...]}`; latest 50 shared runs, newest first                                                         |
-| GET    | `/api/runs/:id`         | One saved run; UUID path parameter; missing ID returns 404                                                  |
+| Method | Path                    | Body / result                                                                                                          |
+| ------ | ----------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/health`           | `{status, schema_version, mode, aiConfigured, modelConfigured}`; configuration flags contain no credentials            |
+| POST   | `/api/evaluate`         | `{input}` → deterministic evaluation; saves the complete input/result                                                  |
+| POST   | `/api/recommend`        | `{input, context}` → provider candidates ranked by the same engine; saves input/result/AI metadata                     |
+| POST   | `/api/strategy`         | `{products, customers, vouchers, floor?, programme?}` → separate heuristic portfolio, not saved as a campaign forecast |
+| POST   | `/api/history/validate` | `{csv}` → `{source:"user_reported", campaigns:[...]}`; no automatic forecast calibration                               |
+| GET    | `/api/runs`             | `{runs:[...]}`; latest 50 shared runs, newest first                                                                    |
+| GET    | `/api/runs/:id`         | One saved run; UUID path parameter; missing ID returns 404                                                             |
 
 POST bodies must be JSON and fit within **32 KiB including JSON escaping/overhead**. Validation rejects unknown fields, missing required fields, numeric strings and invalid integer/rate bounds. Fastify coercion, default insertion and removal of extra fields are disabled. Domain validation additionally checks traffic ordering, stock/basket constraints and response-curve consistency.
 
@@ -89,3 +90,9 @@ AI requires server-only `OPENAI_API_KEY` and explicit `OPENAI_MODEL`. `RUN_STORE
 Errors use `application/problem+json` with `status`, `detail`, `error` and `requestId`; `X-Request-Id` is also returned. Typical statuses: 400 malformed JSON; 403 Host/Origin denied; 404 missing route/run; 413 body too large; 415 unsupported media type; 422 schema/domain violation; 429 minute/concurrency/daily limit; 500 unexpected internal failure; 502 invalid/unavailable provider; 503 missing AI config or unavailable database; 504 provider timeout. Unexpected errors hide internal messages. Server logs redact credential headers and do not log request bodies/prompts.
 
 Tests cover local HTTP behavior, mocked provider/database transport and cancellation. Live OpenAI, Supabase SQL/RLS and cloud hosting have **not** been verified by these tests.
+
+## Catalog fees and portfolio compatibility
+
+Optional `input.marketplace` is `{category, programme:"standard"|"voucher_xtra", platform_voucher_dong}`. It selects the catalog snapshot and replaces manual `economics.fee_bps`/`tax_bps`; all other costs and returns remain active. One category applies to the whole fixed basket. Each strategy includes `fees:{catalog_version, without_voucher, with_voucher}` so fee comparisons refer to that exact strategy. Seller co-funding is deducted from revenue once, independently of shop voucher budget; infrastructure applies once per order and item caps apply per unit. New calculations emit `engine_version:"2.1.0"`; validators retain support for saved `2.0.0` results.
+
+`POST /api/strategy` keeps the portfolio workflow from main. Products use `{name, price, cost?, category}` with integer VND; `customers` and `vouchers` are nonnegative integers; optional `floor` is a percentage (default 20), `programme` defaults to `standard`. Response includes `mode:"heuristic_only"`, assumptions, products, allocations, pairing matrix, sampled stack checks, warnings and limitations. Missing costs are explicitly inferred; sampling does not prove all possible stacks safe. The route has its own 60 requests/IP/minute process-local limit. Swagger provides complete examples.

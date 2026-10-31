@@ -1,7 +1,7 @@
 name: Market Maker CI
 on:
   push:
-    branches: ['main', 'feat/**', 'chore/**', 'docs/**']
+    branches: ['main', 'revamp', 'feat/**', 'chore/**', 'docs/**']
   pull_request:
 permissions:
   contents: read
@@ -22,6 +22,7 @@ jobs:
       - run: npm run check
       - run: npm run format:check
       - run: npm run eval:ai
+      - run: npm run research -- --dry-run
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - name: Package backend and contract source at the tested commit

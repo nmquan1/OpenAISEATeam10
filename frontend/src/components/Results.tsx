@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { getOfferedStrategies, getSelectedOffer } from '../strategy-offers';
 import { StrategyDashboard } from './StrategyDashboard';
+import { MarketplaceFees } from './MarketplaceFees';
 import type { EvaluationResult, RecommendationResult, Voucher } from '@market-maker/contracts';
 import {
   count,
@@ -137,6 +138,7 @@ export function Results({
           baseline={baseline}
           constraints={result.input.constraints}
         />
+        <MarketplaceFees strategy={selected} />
         {row.profit_dong < 0 && (
           <p className="notice error">
             Phương án đang lỗ ở kịch bản này. Kiểm tra giá vốn, phí và voucher trước khi triển khai.

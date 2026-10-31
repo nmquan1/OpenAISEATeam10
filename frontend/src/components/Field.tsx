@@ -9,6 +9,7 @@ export function NumberField({
   step = 1,
   hint,
   disabled = false,
+  money = false,
 }: {
   label: string;
   value: number;
@@ -18,6 +19,7 @@ export function NumberField({
   step?: number;
   hint?: string;
   disabled?: boolean;
+  money?: boolean;
 }) {
   const id = useId();
   const [touched, setTouched] = useState(false);
@@ -39,6 +41,13 @@ export function NumberField({
         step={step}
         required
         disabled={disabled}
+        onKeyDown={(event) => {
+          if (!money || !['ArrowUp', 'ArrowDown'].includes(event.key)) return;
+          event.preventDefault();
+          const increment = (event.shiftKey ? 10000 : 1000) * (event.key === 'ArrowUp' ? 1 : -1);
+          const current = Number.isFinite(value) ? value : min;
+          onChange(Math.max(min, Math.min(max, current + increment)));
+        }}
         onChange={(event) => onChange(event.target.value === '' ? NaN : event.target.valueAsNumber)}
         onBlur={() => setTouched(true)}
         aria-invalid={showError || undefined}

@@ -1,4 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
+const port = Number(process.env.E2E_PORT ?? 4173);
+const baseURL = `http://127.0.0.1:${port}`;
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
@@ -6,18 +8,19 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
-    baseURL: 'http://127.0.0.1:4173',
+    baseURL,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
     command: 'npm start',
-    url: 'http://127.0.0.1:4173/api/health',
+    url: `${baseURL}/api/health`,
     reuseExistingServer: !process.env.CI,
     env: {
       HOST: '127.0.0.1',
-      PORT: '4173',
+      PORT: String(port),
+      ALLOWED_ORIGINS: baseURL,
       OPENAI_API_KEY: '',
       OPENAI_MODEL: '',
       SUPABASE_URL: '',

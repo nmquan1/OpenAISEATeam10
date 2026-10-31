@@ -699,6 +699,21 @@ footer .brand {
 .strategy-dashboard {
   margin-top: 28px;
 }
+.marketplace-fees {
+  margin: 20px 0;
+}
+.portfolio-panel h2 {
+  font-size: 20px;
+}
+.portfolio-panel .field-grid {
+  margin-bottom: 16px;
+}
+.portfolio-result {
+  margin-top: 20px;
+}
+.portfolio-result details {
+  margin-top: 16px;
+}
 .dashboard-heading {
   display: flex;
   align-items: center;

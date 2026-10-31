@@ -8,6 +8,11 @@ import {
   type RecommendationRequest,
 } from '@market-maker/contracts';
 import type { Health, Run } from './types';
+import {
+  parseStrategyRequest,
+  parsePortfolioResult,
+  type StrategyRequest,
+} from '@market-maker/contracts/portfolio';
 
 const baseUrl = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
 
@@ -78,6 +83,15 @@ export async function evaluate(input: EvaluationInput, signal: AbortSignal) {
 export async function recommend(body: RecommendationRequest, signal: AbortSignal) {
   return parseRecommendationResult(
     await request('/recommend', { method: 'POST', body: JSON.stringify(body), signal }),
+  );
+}
+export async function planPortfolio(body: StrategyRequest, signal: AbortSignal) {
+  return parsePortfolioResult(
+    await request('/strategy', {
+      method: 'POST',
+      body: JSON.stringify(parseStrategyRequest(body)),
+      signal,
+    }),
   );
 }
 export async function getRuns(signal: AbortSignal): Promise<Run[]> {

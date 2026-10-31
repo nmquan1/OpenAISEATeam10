@@ -1,5 +1,8 @@
 import { Type, type Static, type TSchema } from '@sinclair/typebox';
 import { Value } from '@sinclair/typebox/value';
+import { MarketplaceSchema, StrategyFeesSchema } from './marketplace.ts';
+export { feeCatalog, categories, type Category, type Programme } from './fee-catalog.ts';
+export { MarketplaceSchema, type Marketplace, type OrderFees } from './marketplace.ts';
 
 const integer = (maximum = 1_000_000_000, minimum = 0) => Type.Integer({ minimum, maximum });
 const bps = () => integer(10_000);
@@ -28,6 +31,7 @@ export const EvaluationInputSchema = obj({
     ),
   }),
   voucher: VoucherSchema,
+  marketplace: Type.Optional(MarketplaceSchema),
   economics: obj({
     fee_bps: bps(),
     tax_bps: bps(),
@@ -101,6 +105,7 @@ export const StrategySchema = obj({
   name: text(200),
   voucher: VoucherSchema,
   discount_dong: integer(Number.MAX_SAFE_INTEGER),
+  fees: Type.Optional(StrategyFeesSchema),
   scenarios: Type.Array(ScenarioSchema, { minItems: 3, maxItems: 3 }),
   base_profit_dong: signedMoney(),
   worst_profit_dong: signedMoney(),
@@ -108,7 +113,7 @@ export const StrategySchema = obj({
 });
 const resultFields = {
   schema_version: Type.Literal('2.0'),
-  engine_version: Type.Literal('2.0.0'),
+  engine_version: Type.Union([Type.Literal('2.0.0'), Type.Literal('2.1.0')]),
   mode: Type.Literal('scenario_only'),
   input: EvaluationInputSchema,
   strategies: Type.Array(StrategySchema, { minItems: 1, maxItems: 8 }),

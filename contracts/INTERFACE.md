@@ -24,7 +24,7 @@ Request `/api/evaluate`: `{input}`. `/api/recommend`: `{input, context:{seller_n
 Engine exports `evaluate(input): EvaluationResult` and `evaluateVouchers(input, vouchers:Voucher[]): EvaluationResult`. Both include baseline/measured/current; AI adds candidates. Response:
 
 ```
-{schema_version:'2.0',engine_version:'2.0.0',mode:'scenario_only',input,strategies:[{
+{schema_version:'2.0',engine_version:'2.1.0',mode:'scenario_only',input,strategies:[{
  id:string,name:string,voucher:Voucher,discount_dong:int,scenarios:[{
  key:'low'|'base'|'high',visits:int,orders:int,redeemed:int,spend_dong:int,revenue_dong:int,profit_dong:int,stockout:boolean,exhausted:boolean
  }],base_profit_dong:int,worst_profit_dong:int,score:number

@@ -15,6 +15,7 @@ import { registerEvaluateRoutes } from './routers/evaluate.ts';
 import { registerRecommendRoutes } from './routers/recommend.ts';
 import { registerRunsRoutes } from './routers/runs.ts';
 import { registerHistoryRoutes } from './routers/history.ts';
+import { registerStrategyRoutes } from './routers/strategy.ts';
 const root = resolve(fileURLToPath(new URL('../../..', import.meta.url)));
 export interface AppOptions {
   host?: string;
@@ -61,7 +62,7 @@ export async function buildApp(options: AppOptions = {}) {
   await app.register(swagger, {
     openapi: {
       openapi: '3.0.3',
-      info: { title: 'Market Maker API', version: '2.0.0' },
+      info: { title: 'Market Maker API', version: '2.1.0' },
     },
   });
   await app.register(swaggerUi, {
@@ -81,6 +82,7 @@ export async function buildApp(options: AppOptions = {}) {
   registerRecommendRoutes(app, context);
   registerRunsRoutes(app, context);
   registerHistoryRoutes(app, context);
+  registerStrategyRoutes(app);
   const frontend = options.frontendRoot ?? resolve(root, 'frontend/dist');
   if (existsSync(resolve(frontend, 'index.html'))) {
     await app.register(fastifyStatic, {

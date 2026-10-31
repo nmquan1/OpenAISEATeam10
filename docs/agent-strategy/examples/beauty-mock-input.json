@@ -1,0 +1,11 @@
+{
+  "est_customers": 8000,
+  "num_vouchers": 2500,
+  "products": [
+    { "name": "Serum Vitamin C 30ml", "price": 350000, "cost": 120000 },
+    { "name": "Kem chống nắng SPF50", "price": 280000 },
+    { "name": "Sữa rửa mặt dịu nhẹ", "price": 159000, "cost": 95000 },
+    { "name": "Mặt nạ giấy (hộp 10)", "price": 199000 },
+    { "name": "Bông tẩy trang 120 miếng", "price": 45000, "cost": 33000 }
+  ]
+}

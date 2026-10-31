@@ -176,9 +176,9 @@ export function StrategyDashboard({
         </div>
       </div>
       <p className="hint">
-        Doanh thu đã trừ phần voucher shop tài trợ và điều chỉnh theo tỷ lệ hoàn hàng. Lợi nhuận đã
-        tính các khoản phí, thuế, giá vốn, đóng gói, shipping, ads và hoàn hàng trong thiết lập;
-        không trừ chi voucher thêm lần nữa.
+        Doanh thu đã trừ phần voucher shop tài trợ, đồng tài trợ voucher sàn nếu có và điều chỉnh
+        theo tỷ lệ hoàn hàng. Lợi nhuận đã tính các khoản phí, thuế, giá vốn, đóng gói, shipping,
+        ads và hoàn hàng trong thiết lập; không trừ chi voucher thêm lần nữa.
       </p>
     </section>
   );

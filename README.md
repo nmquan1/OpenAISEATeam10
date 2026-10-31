@@ -95,7 +95,7 @@ Xem [data contract](docs/data-contract.md) và [API docs](docs/api.md). CSV temp
 
 ## Phạm vi đã biết
 
-Mô hình fee/tax tổng hợp không phải bảng phí Shopee đã xác minh. Response curve do người dùng giả định, chưa được hiệu chuẩn hay chứng minh causal lift. Không hỗ trợ toàn bộ stacking, phân bổ lãi từng SKU hoặc tự publish voucher lên sàn. Thiếu credentials thì AI disabled. Tests fixture không xác minh chất lượng live model.
+Chế độ mặc định dùng fee/tax do người bán nhập. Chọn ngành hàng để dùng snapshot phí Shopee có nguồn và ngày ghi nhận; snapshot không tự xác minh lại khi chạy. Response curve do người dùng giả định, chưa được hiệu chuẩn hay chứng minh causal lift. Không hỗ trợ toàn bộ stacking, phân bổ lãi từng SKU hoặc tự publish voucher lên sàn. Thiếu credentials thì AI disabled. Tests fixture không xác minh chất lượng live model.
 
 ## Deploy và sản phẩm
 
@@ -105,3 +105,13 @@ Mô hình fee/tax tổng hợp không phải bảng phí Shopee đã xác minh. 
 - [Nghiên cứu](docs/research.md)
 
 Deployment cloud/Supabase/OpenAI thật cần cấu hình tài khoản; repository cung cấp scaffold và test offline, không khẳng định đã deploy hoặc kiểm chứng cloud khi chưa có credentials.
+
+## Phí Shopee và danh mục voucher
+
+Chọn **Ngành hàng Shopee** để dùng catalog `fees@2026-10-31`, chương trình thường/Voucher Xtra và voucher sàn đồng tài trợ. Catalog thay thế hai tỷ lệ phí/thuế nhập tay cho toàn giỏ; cùng một ngành áp dụng cho mọi SKU. Bảng phí của từng chiến lược khớp voucher đang chọn. Engine `2.1.0` ghi rõ snapshot đầu vào và phiên bản catalog; bản lưu `2.0.0` vẫn đọc được.
+
+**Danh mục voucher phối hợp** gọi `/api/strategy`: nhập số khách mục tiêu, số voucher và biên tối thiểu để phân bổ mã/kiểm tra kết hợp theo quy tắc. Đây là công cụ heuristic riêng, không dự báo doanh thu và không thay kết quả dashboard.
+
+Các ô tiền nhận số đồng nguyên bất kỳ; ArrowUp/Down tăng/giảm 1.000đ, giữ Shift là 10.000đ.
+
+`npm run research -- --dry-run` kiểm tra pipeline không gọi provider. Chạy thật cần `OPENAI_API_KEY` và `OPENAI_RESEARCH_MODEL` (hoặc `OPENAI_MODEL`), chỉ ghi đề xuất vào `data/fees/candidates/`; người phụ trách phải review trước khi sửa catalog. Workflow hằng ngày dùng secret `OPENAI_API_KEY_TEAM10_HACKATHON` và repository variable `OPENAI_RESEARCH_MODEL`; không có cấu hình thì bỏ qua.

@@ -57,3 +57,11 @@ CI runs typecheck, lint, tests, build, offline candidate benchmark and real-brow
 - No tenant isolation by user request; use local/private demo environments for nonpublic seller data.
 - Supabase migrations, cloud rollouts and live provider behavior need credentials and external verification.
 - No claimed production SLO, customer traction or measured profit uplift.
+
+## Main integration on revamp
+
+`contracts/fee-catalog.ts` preserves the incoming source snapshot. `marketplace.ts` defines optional fee inputs and breakdown; `engine/fees.ts` allocates discounts across units with integer arithmetic and handles item caps/order fees. Manual fees remain the default.
+
+`contracts/portfolio.ts`, `engine/portfolio.ts` and `api/routers/strategy.ts` expose the separate heuristic portfolio planner. React presents it separately from the top-five income dashboards; it does not reuse traffic as a customer count or claim calibrated forecasting.
+
+`scripts/research/run.mjs` loads the typed catalog through tsx. The scheduled research workflow installs lockfile dependencies, records candidate changes and never updates the catalog automatically. CI also runs its offline dry run.

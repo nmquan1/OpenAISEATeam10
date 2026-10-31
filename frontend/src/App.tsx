@@ -12,6 +12,7 @@ import { clearDraft, exportPlan, importDraft, loadDraft, saveDraft, type Draft }
 import { AiPanel } from './components/AiPanel';
 import { ContextEditor } from './components/ContextEditor';
 import { Results } from './components/Results';
+import { PortfolioPanel } from './components/PortfolioPanel';
 import { StrategyForm } from './components/StrategyForm';
 import type { DecisionContext, Health, Run, Strategy } from './types';
 import { getOfferedStrategies, getSelectedOffer } from './strategy-offers';
@@ -324,8 +325,9 @@ export function App() {
           </div>
         </section>
         <div className="scope-note">
-          <strong>Mô phỏng minh bạch, chưa phải dự báo.</strong> Traffic, phản ứng khách hàng và phí
-          do bạn nhập. AI đề xuất cấu hình; engine tính tiền. App không tự thay voucher trên Shopee.
+          <strong>Mô phỏng minh bạch, chưa phải dự báo.</strong> Traffic và phản ứng khách hàng do
+          bạn nhập; phí dùng catalog hoặc tự nhập. AI đề xuất cấu hình; engine tính tiền. App không
+          tự thay voucher trên Shopee.
         </div>
         <p className="local-mode">Workspace MVP dùng chung · không cần đăng nhập.</p>
         <div className="toolbar">
@@ -441,6 +443,7 @@ export function App() {
                 </p>
               </section>
             )}
+            <PortfolioPanel input={input} disabled={!health || evaluating} />
             {health && (
               <details className="card">
                 <summary>Lịch sử phân tích dùng chung</summary>
