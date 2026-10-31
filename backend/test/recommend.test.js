@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { recommend,rankCandidates } from '../server/recommend.mjs';
-import {defaults} from '../src/engine.js';
+import { recommend,rankCandidates } from '../src/agent/recommend.mjs';
+import {defaults} from '../src/engine/index.js';
 const voucher={type:'percent',value:50,cap:10000,minimum:20000};
 test('50 percent capped at 10k respects cap and budget',()=>{
  const rows=rankCandidates(defaults,[voucher]);

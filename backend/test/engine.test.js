@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { evaluate, defaults } from '../src/engine.js';
+import { evaluate, defaults } from '../src/engine/index.js';
 test('scenario is reproducible and respects inventory, quota and budget', () => {
  const input = {...defaults, stock:17, quota:3, budget:50000};
  assert.deepEqual(evaluate(input), evaluate(input));
