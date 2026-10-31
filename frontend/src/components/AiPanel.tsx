@@ -17,11 +17,10 @@ export function AiPanel({
 }) {
   return (
     <section className="card ai-panel" aria-labelledby="ai-heading" aria-busy={busy}>
-      <span className="pill">AI · TẠO ỨNG VIÊN</span>
-      <h2 id="ai-heading">Khám phá thêm cách cấu hình voucher</h2>
+      <h2 id="ai-heading">Tạo tối đa 5 voucher mới bằng AI</h2>
       <p>
-        AI đọc thông số và bối cảnh để đề xuất tối đa 5 voucher. Engine xếp hạng cùng baseline; AI
-        không tự dự đoán lợi nhuận.
+        AI đọc số liệu và ghi chú ở trên rồi đề xuất voucher. Lợi nhuận vẫn do công cụ tính lại và
+        so cùng các phương án gốc.
       </p>
       {!health && (
         <p className="notice">
@@ -56,8 +55,8 @@ export function AiPanel({
         )}
       </div>
       <p className="hint">
-        AI chỉ chạy khi bạn bấm. Thay đổi đầu vào sẽ hủy yêu cầu cũ. Chi phí phụ thuộc tài khoản
-        provider; không có phản hồi giả khi thiếu cấu hình.
+        Chỉ chạy khi bạn bấm và có tính phí theo tài khoản OpenAI. Sửa số liệu sẽ hủy yêu cầu đang
+        chạy.
       </p>
     </section>
   );

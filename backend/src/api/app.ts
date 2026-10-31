@@ -12,7 +12,7 @@ import type { Recommend, RouteContext } from './types.ts';
 import { registerTransport } from './plugins/transport.ts';
 import { registerHealthRoutes } from './routers/health.ts';
 import { registerEvaluateRoutes } from './routers/evaluate.ts';
-import { registerRecommendRoutes } from './routers/recommend.ts';
+import { registerRecommendRoutes, registerUsageRoutes } from './routers/recommend.ts';
 import { registerRunsRoutes } from './routers/runs.ts';
 import { registerHistoryRoutes } from './routers/history.ts';
 import { registerStrategyRoutes } from './routers/strategy.ts';
@@ -26,6 +26,7 @@ export interface AppOptions {
   store?: RunStore;
   recommendImpl?: Recommend;
   dailyAiLimit?: number;
+  aiBudgetUsd?: number;
   logger?: boolean;
   frontendRoot?: string;
 }
@@ -76,10 +77,12 @@ export async function buildApp(options: AppOptions = {}) {
     aiConfigured: options.aiConfigured ?? false,
     modelConfigured: options.modelConfigured ?? false,
     dailyAiLimit: options.dailyAiLimit ?? 20,
+    aiBudgetUsd: options.aiBudgetUsd ?? 10,
   };
   registerHealthRoutes(app, context);
   registerEvaluateRoutes(app, context);
   registerRecommendRoutes(app, context);
+  registerUsageRoutes(app, context);
   registerRunsRoutes(app, context);
   registerHistoryRoutes(app, context);
   registerStrategyRoutes(app);

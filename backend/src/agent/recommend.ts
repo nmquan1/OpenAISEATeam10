@@ -42,6 +42,7 @@ export async function recommend(
     provider_request_id: proposal.requestId,
     usage: proposal.usage,
     estimated_cost_usd: proposal.estimatedCostUsd,
+    provider_attempts: proposal.attempts,
     decision_context: decisionContext,
     rejected_candidates: proposal.candidates.length - valid.length,
   };

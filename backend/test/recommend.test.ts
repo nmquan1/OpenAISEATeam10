@@ -118,3 +118,48 @@ test('Timeout while reading provider body is 504; abort is propagated', async ()
     { status: 499 },
   );
 });
+test('Transient upstream failures and timeouts retry; quota/auth errors do not and stay sanitized', async () => {
+  const ok = fixture([voucher]);
+  let calls = 0;
+  const flaky: typeof fetch = async (url, options) => {
+    calls++;
+    if (calls === 1) return Response.json({ error: { message: 'boom' } }, { status: 500 });
+    if (calls === 2) throw Object.assign(new Error('timed out'), { name: 'TimeoutError' });
+    return ok(url, options);
+  };
+  const result = await recommend(
+    { input: defaults, context: { seller_notes: '' } },
+    { env: { ...env, OPENAI_MAX_RETRIES: '2' }, fetchImpl: flaky },
+  );
+  assert.equal(calls, 3);
+  assert.equal(result.provider_attempts, 3);
+
+  calls = 0;
+  const quota: typeof fetch = async () => {
+    calls++;
+    return Response.json(
+      {
+        error: { code: 'insufficient_quota', message: 'You exceeded your current quota sk-secret' },
+      },
+      { status: 429 },
+    );
+  };
+  await assert.rejects(
+    recommend({ input: defaults, context: { seller_notes: '' } }, { env, fetchImpl: quota }),
+    (error: Error & { status: number; internal?: string }) =>
+      error.status === 503 &&
+      !error.message.includes('quota sk-secret') &&
+      Boolean(error.internal?.includes('insufficient_quota')),
+  );
+  assert.equal(calls, 1);
+});
+test('Cost is estimated from configured per-million rates', async () => {
+  const result = await recommend(
+    { input: defaults, context: { seller_notes: '' } },
+    {
+      env: { ...env, OPENAI_INPUT_USD_PER_MILLION: '1', OPENAI_OUTPUT_USD_PER_MILLION: '2' },
+      fetchImpl: fixture([voucher]),
+    },
+  );
+  assert.equal(result.estimated_cost_usd, (100 * 1 + 50 * 2) / 1e6);
+});

@@ -1,7 +1,10 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { defaults } from '../contracts/model.ts';
 import { evaluate, evaluateVouchers } from '../backend/src/engine/index.ts';
+
+// The app shows one step per tab; tests switch tabs the way a user would.
+const openStep = (page: Page, name: RegExp) => page.getByRole('tab', { name }).click();
 
 const money = (value: number) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
@@ -32,6 +35,7 @@ test('Top five offers keep engine order, update financial dashboards and export 
   expect(offers).not.toContain(baseline);
   await page.route('**/api/evaluate', (route) => route.fulfill({ json: result }));
   await page.goto('/');
+  await openStep(page, /Kết quả/);
   const radios = page.getByRole('radio');
   await expect(radios).toHaveCount(5);
   expect(
@@ -87,6 +91,7 @@ test('Mobile dashboard shows losses and handles zero traffic without overflow or
   const result = evaluate(input);
   await page.route('**/api/evaluate', (route) => route.fulfill({ json: result }));
   await page.goto('/');
+  await openStep(page, /Kết quả/);
   const strategy = result.recommended;
   expect(strategy.base_profit_dong).toBeLessThan(0);
   await expect(page.getByTestId('dashboard-profit')).toHaveText(money(strategy.base_profit_dong));

@@ -1,5 +1,8 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import type { EvaluationResult } from '../contracts/model.ts';
+
+// The app shows one step per tab; tests switch tabs the way a user would.
+const openStep = (page: Page, name: RegExp) => page.getByRole('tab', { name }).click();
 
 const money = (value: number) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
@@ -10,7 +13,9 @@ test('Merged marketplace fees, portfolio and currency keyboard controls work wit
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/');
+  await openStep(page, /Kết quả/);
   await expect(page.getByTestId('dashboard-profit')).toBeVisible();
+  await openStep(page, /Nhập số liệu/);
   const price = page.getByLabel('Giá bán / SP (₫)', { exact: true });
   await price.focus();
   await page.keyboard.press('ArrowUp');
@@ -28,6 +33,7 @@ test('Merged marketplace fees, portfolio and currency keyboard controls work wit
   expect(result.engine_version).toBe('2.1.0');
   await expect(page.getByLabel('Phí tổng hợp (%)', { exact: true })).toBeDisabled();
   await expect(page.getByLabel('Thuế (%)', { exact: true })).toBeDisabled();
+  await openStep(page, /Kết quả/);
   await expect(page.getByTestId('dashboard-profit')).toHaveText(
     money(result.recommended.base_profit_dong),
   );
@@ -40,11 +46,13 @@ test('Merged marketplace fees, portfolio and currency keyboard controls work wit
     money(discounted.fees!.with_voucher.total),
   );
   await expect(page.getByTestId('dashboard-profit')).toHaveText(money(discounted.base_profit_dong));
+  await openStep(page, /Công cụ khác/);
   await page.getByRole('button', { name: 'Lập danh mục voucher', exact: true }).click();
   await expect(
     page.getByRole('region', { name: 'Danh mục voucher được phân bổ', exact: true }),
   ).toBeVisible();
   await expect(page.getByText('Đã phân bổ 300 voucher.', { exact: true })).toBeVisible();
+  await openStep(page, /Nhập số liệu/);
   await page.getByLabel('Ngành hàng Shopee', { exact: true }).selectOption('');
   await expect(page.getByLabel('Phí tổng hợp (%)', { exact: true })).toBeEnabled();
   await expect(

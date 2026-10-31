@@ -44,8 +44,7 @@ export function StrategyForm({ input, onChange, onSubmit, busy, disabled }: Prop
     <form id="strategy-form" className="card strategy-form" onSubmit={submit}>
       <div className="section-heading">
         <div>
-          <p className="eyebrow">01 · THIẾT LẬP</p>
-          <h2>Giỏ hàng & kinh tế đơn</h2>
+          <h2>Nhập số liệu giỏ hàng</h2>
         </div>
         <span className="pill">Đồng Việt Nam</span>
       </div>

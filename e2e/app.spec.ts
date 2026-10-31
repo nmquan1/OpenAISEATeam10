@@ -1,6 +1,9 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { recommend } from '../backend/src/agent/recommend.ts';
+
+// The app shows one step per tab; tests switch tabs the way a user would.
+const openStep = (page: Page, name: RegExp) => page.getByRole('tab', { name }).click();
 
 test('Built app calculates, keeps keyboard focus, exports the selected strategy and restores draft', async ({
   page,
@@ -8,14 +11,17 @@ test('Built app calculates, keeps keyboard focus, exports the selected strategy 
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/');
+  await openStep(page, /Kết quả/);
   await expect(page.getByRole('heading', { name: 'Bức tranh lợi nhuận của bạn' })).toBeVisible();
   const low = page
     .getByRole('group', { name: 'Kịch bản traffic' })
     .getByRole('button', { name: 'Thấp', exact: true });
   await low.click();
   await expect(low).toBeFocused();
+  await openStep(page, /Nhờ AI/);
   await page.getByLabel('Ghi chú về shop và khách hàng').fill('Shop ưu tiên lợi nhuận');
   await expect(page.getByText('Bản nháp đã lưu trên trình duyệt.')).toBeVisible();
+  await openStep(page, /Kết quả/);
   const radios = page.getByRole('radio');
   await radios.last().check();
   const chosen = await radios.last().inputValue();
@@ -27,6 +33,7 @@ test('Built app calculates, keeps keyboard focus, exports the selected strategy 
   expect(exported.selected_strategy.id).toBe(chosen);
   expect(exported.context.seller_notes).toBe('Shop ưu tiên lợi nhuận');
   await page.reload();
+  await openStep(page, /Nhờ AI/);
   await expect(page.getByLabel('Ghi chú về shop và khách hàng')).toHaveValue(
     'Shop ưu tiên lợi nhuận',
   );
@@ -37,7 +44,9 @@ test('Without credentials AI is explicitly disabled and API docs allow interacti
   page,
 }) => {
   await page.goto('/');
+  await openStep(page, /Kết quả/);
   await expect(page.getByRole('heading', { name: 'Bức tranh lợi nhuận của bạn' })).toBeVisible();
+  await openStep(page, /Nhờ AI/);
   await expect(page.getByRole('button', { name: 'Đề xuất bằng AI', exact: false })).toBeDisabled();
   await page.goto('/api/docs');
   await expect(page.getByRole('heading', { name: 'Market Maker API' })).toBeVisible();
@@ -50,7 +59,9 @@ test('Historical CSV is validated and enters context without changing forecast a
   page,
 }) => {
   await page.goto('/');
+  await openStep(page, /Kết quả/);
   await expect(page.getByRole('heading', { name: 'Bức tranh lợi nhuận của bạn' })).toBeVisible();
+  await openStep(page, /Nhờ AI/);
   await page.getByLabel('Nhập lịch sử sale CSV', { exact: true }).setInputFiles({
     name: 'history.csv',
     mimeType: 'text/csv',
@@ -108,7 +119,9 @@ test('AI fixture can be selected, exported with provenance and applied to the fo
     await route.fulfill({ json: result });
   });
   await page.goto('/');
+  await openStep(page, /Kết quả/);
   await expect(page.getByRole('heading', { name: 'Bức tranh lợi nhuận của bạn' })).toBeVisible();
+  await openStep(page, /Nhờ AI/);
   await page.getByRole('button', { name: 'Đề xuất bằng AI', exact: false }).click();
   await expect(
     page.getByRole('heading', { name: 'Ứng viên AI đã được engine kiểm tra' }),
@@ -125,4 +138,25 @@ test('AI fixture can be selected, exported with provenance and applied to the fo
   await page.getByRole('button', { name: 'Áp dụng voucher vào thiết lập' }).click();
   await expect(page.getByText(/Đã đưa voucher/)).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Bức tranh lợi nhuận của bạn' })).toBeVisible();
+});
+
+test('Step tabs show one step at a time and support arrow-key navigation', async ({ page }) => {
+  await page.goto('/');
+  const input = page.getByRole('tab', { name: /Nhập số liệu/ });
+  const results = page.getByRole('tab', { name: /Kết quả/ });
+  await expect(input).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('heading', { name: 'Nhập số liệu giỏ hàng' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Bức tranh lợi nhuận của bạn' })).toBeHidden();
+  await expect(results).toContainText('Đề xuất:');
+  await input.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(results).toBeFocused();
+  await expect(results).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('heading', { name: 'Bức tranh lợi nhuận của bạn' })).toBeVisible();
+  await page.keyboard.press('ArrowLeft');
+  await page.keyboard.press('ArrowLeft');
+  await expect(page.getByRole('tab', { name: /Công cụ khác/ })).toBeFocused();
+  await page.getByRole('tab', { name: /Kết quả/ }).click();
+  await page.getByRole('button', { name: 'Nhờ AI gợi ý thêm voucher' }).click();
+  await expect(page.getByRole('tab', { name: /Nhờ AI/ })).toHaveAttribute('aria-selected', 'true');
 });

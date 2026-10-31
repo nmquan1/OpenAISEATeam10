@@ -9,17 +9,41 @@ export interface RunRecord {
   input: unknown;
   result: unknown;
 }
+/** One paid AI call, kept per client so the UI can show model, usage, cost and context. */
+export interface AiUsageRecord {
+  id: string;
+  createdAt: string;
+  clientId: string;
+  runId: string;
+  model: string;
+  requestId: string;
+  promptVersion: string;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  costUsd: number | null;
+  attempts: number;
+  context: unknown;
+}
 export interface RunStore {
   save(kind: RunRecord['kind'], input: unknown, result: unknown): Promise<RunRecord>;
   list(): Promise<RunRecord[]>;
   get(id: string): Promise<RunRecord | undefined>;
   consumeAi(limit: number): Promise<boolean>;
+  aiSpentUsd(clientId: string): Promise<number>;
+  recordAi(entry: Omit<AiUsageRecord, 'id' | 'createdAt'>): Promise<AiUsageRecord>;
+  listAi(clientId: string): Promise<AiUsageRecord[]>;
 }
 interface State {
   version: 2;
   runs: RunRecord[];
   usage: { day: string; count: number };
+  ai?: AiUsageRecord[];
 }
+const newAiRecord = (entry: Omit<AiUsageRecord, 'id' | 'createdAt'>): AiUsageRecord => ({
+  id: randomUUID(),
+  createdAt: new Date().toISOString(),
+  ...entry,
+});
 /** One shared workspace, one writer process per file. Use Supabase for multiple instances. */
 export class JsonRunStore implements RunStore {
   private pending: Promise<unknown> = Promise.resolve();
@@ -79,6 +103,26 @@ export class JsonRunStore implements RunStore {
       state.usage.count++;
       return true;
     });
+  }
+  async aiSpentUsd(clientId: string): Promise<number> {
+    await this.pending;
+    return ((await this.read()).ai ?? [])
+      .filter((row) => row.clientId === clientId)
+      .reduce((sum, row) => sum + (row.costUsd ?? 0), 0);
+  }
+  recordAi(entry: Omit<AiUsageRecord, 'id' | 'createdAt'>): Promise<AiUsageRecord> {
+    return this.update((state) => {
+      const row = newAiRecord(entry);
+      (state.ai ??= []).push(row);
+      return row;
+    });
+  }
+  async listAi(clientId: string): Promise<AiUsageRecord[]> {
+    await this.pending;
+    return ((await this.read()).ai ?? [])
+      .filter((row) => row.clientId === clientId)
+      .slice(-50)
+      .reverse();
   }
 }
 /** Database-only adapter: service-role key stays on the server; all runs share one workspace. */
@@ -149,5 +193,51 @@ export class SupabaseRunStore implements RunStore {
     if (typeof result !== 'boolean')
       throw Object.assign(new Error('Invalid quota store response'), { status: 503 });
     return result;
+  }
+  async aiSpentUsd(clientId: string): Promise<number> {
+    const rows = (await this.request(
+      `market_maker_ai_calls?client_id=eq.${encodeURIComponent(clientId)}&select=cost_usd`,
+    )) as { cost_usd: number | null }[];
+    return rows.reduce((sum, row) => sum + Number(row.cost_usd ?? 0), 0);
+  }
+  async recordAi(entry: Omit<AiUsageRecord, 'id' | 'createdAt'>): Promise<AiUsageRecord> {
+    const row = newAiRecord(entry);
+    await this.request('market_maker_ai_calls', {
+      method: 'POST',
+      body: JSON.stringify({
+        id: row.id,
+        created_at: row.createdAt,
+        client_id: row.clientId,
+        run_id: row.runId,
+        model: row.model,
+        request_id: row.requestId,
+        prompt_version: row.promptVersion,
+        input_tokens: row.inputTokens,
+        output_tokens: row.outputTokens,
+        cost_usd: row.costUsd,
+        attempts: row.attempts,
+        context: row.context,
+      }),
+    });
+    return row;
+  }
+  async listAi(clientId: string): Promise<AiUsageRecord[]> {
+    const rows = (await this.request(
+      `market_maker_ai_calls?client_id=eq.${encodeURIComponent(clientId)}&order=created_at.desc&limit=50`,
+    )) as Record<string, unknown>[];
+    return rows.map((row) => ({
+      id: String(row.id),
+      createdAt: String(row.created_at),
+      clientId: String(row.client_id),
+      runId: String(row.run_id),
+      model: String(row.model),
+      requestId: String(row.request_id),
+      promptVersion: String(row.prompt_version),
+      inputTokens: row.input_tokens as number | null,
+      outputTokens: row.output_tokens as number | null,
+      costUsd: row.cost_usd === null ? null : Number(row.cost_usd),
+      attempts: Number(row.attempts),
+      context: row.context,
+    }));
   }
 }
