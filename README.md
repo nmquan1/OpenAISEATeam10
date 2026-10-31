@@ -1,97 +1,105 @@
 # Market Maker
 
-Ứng dụng lập chiến lược voucher cho ngày sale lớn, theo theme Shopee. Stage hiện tại là **mô phỏng một SKU/đơn có đề xuất AI**, với data contract dùng chung và API chia theo route; chưa phải dịch vụ production đa người dùng.
+MVP lập kế hoạch voucher: nhập giỏ hàng/chi phí/traffic, so sánh kịch bản, tùy chọn nhờ OpenAI đề xuất thêm voucher và xuất phương án đang chọn.
 
-## Chạy local
+## Bắt đầu trong 3 phút
 
-Node.js >=22; không có dependency runtime.
+Dùng Node.js 22. Chạy tại root:
 
 ```sh
 npm ci
-cp .env.example .env
+cp -n .env.example .env
+npm run dev
+```
+
+- App React: http://localhost:5173
+- API + Swagger **Try it out**: http://localhost:4173/api/docs
+- OpenAPI JSON: http://localhost:4173/api/docs/json
+- Health/readiness: http://localhost:4173/api/health
+
+Mô phỏng không cần credential. MVP không có đăng nhập; mọi người truy cập cùng một workspace. Lịch sử server được lưu mặc định ở `.local/workspace-runs.json`, không commit vào Git.
+
+Để chạy bản build cùng backend tại http://localhost:4173:
+
+```sh
+npm run build
 npm start
 ```
 
-Mở http://localhost:4173. Mô phỏng không cần key. Để dùng “Đề xuất bằng AI”, điền `OPENAI_API_KEY` vào `.env` rồi restart server. `npm run dev` chạy cùng service; `npm run check` kiểm tra cú pháp JS/MJS, chạy tests và build UI. Root dùng npm workspaces `backend` và `frontend`; `npm --prefix backend start` cũng khởi động app từ package backend. `npm run build` xuất frontend tĩnh vào `dist/`; artifact này không chứa API AI.
+## Bật OpenAI sau
 
-Server bind `127.0.0.1`, kiểm tra Host/Origin của localhost, giới hạn body/rate/concurrency và có graceful shutdown. `PORT` phải là số nguyên 1–65535. Không đưa key hoặc token server vào trình duyệt.
+Điền hai giá trị server-only trong `.env`, rồi restart:
 
-## App làm được gì ở stage hiện tại
-
-App có giao diện nhập sản phẩm, giá vốn/phí, voucher, tồn kho, ngân sách, traffic/CVR và khẩu vị; so sánh không voucher, giảm 60% mức ưu đãi và voucher đầy đủ qua ba kịch bản traffic; hiển thị đơn hàng, chi voucher, doanh thu/lợi nhuận và xuất kế hoạch JSON.
-
-Nút AI gửi input và bối cảnh tới provider qua server, nhận tối đa 5 cấu hình voucher, thêm baseline/current voucher rồi dùng engine xác định để xếp hạng. Thiếu key hoặc provider lỗi trả lỗi rõ; không thay bằng dữ liệu giả. Chưa xác minh gọi live bằng key ở lần kiểm tra này; tests dùng provider stub. Roundtable Finance/Growth/Risk trên màn hình là phần diễn giải demo, không phải ba agent đang tranh luận.
-
-Backend bổ sung shared validator, tách route health/evaluate/recommend, phân loại lỗi HTTP, request ID, kiểm tra Host/Origin, bearer token tùy chọn cho client server-to-server và kiểm thử biên. Frontend và backend dùng cùng engine để tránh hai phiên bản công thức.
-
-## Cấu trúc project
-
-```text
-backend/
-  src/server.mjs          entrypoint, cấu hình và graceful shutdown
-  src/api/                app, HTTP helpers, routers theo chức năng
-  src/agent/              provider và xếp hạng voucher candidate
-  src/engine/             engine xác định, dùng chung với trình duyệt
-  test/                   kiểm thử model, engine, provider và HTTP
-frontend/
-  index.html
-  src/                    giao diện và stylesheet
-contracts/
-  model.js                validator, defaults và kiểu dữ liệu đầu vào
-scripts/                  build và kiểm tra từ root
-docs/                     nghiên cứu, kiến trúc và HTTP/data contracts
-data/                     CSV template
+```dotenv
+OPENAI_API_KEY=your-key
+OPENAI_MODEL=your-enabled-responses-model
 ```
 
-[Backend](backend/README.md), [frontend](frontend/README.md) và [contracts](contracts/README.md) có hướng dẫn riêng. Cấu trúc bám `../margin-guard` theo trách nhiệm; không tạo các module database, guardrail hoặc MCP khi app chưa triển khai chúng. Backend phục vụ frontend và API trên cùng origin; `/engine/index.js` và `/contracts/model.js` là hai module dùng chung được allowlist rõ, không mở cả thư mục backend làm static assets.
+Chọn model có quyền Responses + strict Structured Outputs trong tài khoản của bạn. Không có model mặc định ẩn, không mock thành AI thật khi thiếu key. `OPENAI_TIMEOUT_MS`, output-token limit và quota ngày đã có placeholder/cấu hình trong `.env.example`. Không đặt key trong biến `VITE_*`.
 
-### Data model và API
+## Kiểm thử dễ hiểu
 
-`contracts/model.js` là nguồn validation dùng chung cho trình duyệt, engine và HTTP boundary. Tiền là số nguyên đồng; dữ liệu đếm là số nguyên; phần trăm vẫn dùng đơn vị `%` của UI. API yêu cầu đầy đủ input và từ chối field lạ thay vì âm thầm chấp nhận hoặc đổi kiểu.
+| Lệnh/công cụ                | Dùng để làm gì                                                |
+| --------------------------- | ------------------------------------------------------------- |
+| `/api/docs`                 | Bấm Execute với ví dụ schema, xem request/response/error      |
+| `npm test`                  | Test engine, contract, provider fixture, storage và API       |
+| `npm run test:ui`           | Playwright UI: chọn test, chạy browser, xem từng bước         |
+| `npm run test:e2e`          | Chạy browser regression trên artifact Vite đã build           |
+| `npm run check`             | TypeScript + ESLint + tests + build                           |
+| `npm run format:check`      | Kiểm tra format code                                          |
+| `npm run eval:ai`           | Benchmark fixture/grid offline, không gọi API trả phí         |
+| `npm run eval:ai -- --live` | Tùy chọn gọi OpenAI thật với credentials của bạn; có tính phí |
 
-| Route | Chức năng |
-|---|---|
-| `GET /api/health` | Trạng thái tiến trình và phiên bản contract |
-| `POST /api/evaluate` | Validate input rồi tính ba chiến lược bằng engine |
-| `POST /api/recommend` | Validate input/context, gọi provider và tính lại/xếp hạng candidate |
+Trước lần browser test đầu: `npx playwright install chromium`. Chạy `npm run build` trước E2E/UI mode. CI tự làm các bước này, không cần key AI.
 
-Xem [HTTP contract, bounds và lỗi](docs/api.md). Token `MARKET_MAKER_API_TOKEN` tùy chọn chỉ dành cho API client/gateway; UI chưa có luồng đăng nhập hoặc gửi token. Bật token sẽ chặn request AI từ UI hiện tại.
+## Cấu trúc để đọc code
 
-## Checkout/review và merge tuần tự
+```text
+contracts/                  TypeBox schema, TypeScript types, fixture examples
+backend/src/
+  api/routers/              HTTP endpoints, schema, Swagger descriptions
+  api/plugins/              Origin/Host/CORS, rate limits, errors
+  engine/                   Pure deterministic basket economics
+  agent/                    OpenAI transport, prompt, context, recommendation service
+  history/                  CSV aggregate validation
+  store/                    Local atomic file / optional Supabase database
+  server.ts                 Configuration and process lifecycle
+backend/test/               Behavioral tests
+frontend/src/
+  components/               Forms, context, results and AI panels
+  api.ts                    Typed HTTP client
+  draft.ts                  Validated import/export and browser draft
+  App.tsx                   State and user flow
+  main.tsx                  Browser entry
+scripts/                    Dev/check/build/evaluation/deployment commands
+e2e/                        Browser workflows and exported-plan checks
+docs/                       Contracts, deployment, research and pitching source
+```
 
-Stack chức năng được tích hợp theo thứ tự dưới đây. Năm branch sau foundation đã được merge local vào `main` sau khi chạy kiểm tra CI tương ứng trên Node 22 trước mỗi merge. Bảng giữ lại kết quả kiểm tra ở commit gốc để giải thích khả năng của từng stage; script và cấu trúc project hiện tại đã được cập nhật ở thay đổi tiếp theo.
+Đọc theo thứ tự: `contracts/model.ts` → `contracts/fixtures.ts` → `backend/src/engine/index.ts` → `backend/src/api/routers/evaluate.ts` → `frontend/src/App.tsx`.
 
-| Thứ tự | Branch · commit gốc | Stage và kết quả kiểm tra ở commit đó |
-|---|---|---|
-| 1 | `chore/market-maker-foundation` · `28823df` | Scaffold, scripts, CI. `npm run check` lỗi vì chưa có `src/engine.js`; chưa có UI để mở. CI đã kiểm tra scaffold theo điều kiện. |
-| 2 | `feat/market-maker-strategy-engine` · `512c459` | Engine xác định và 5 tests pass. Full check dừng ở build vì chưa có `index.html`; chưa có UI. |
-| 3 | `feat/market-maker-workbench` · `4b11ced` | Giao diện, ba kịch bản, biểu đồ và export kế hoạch. 5 tests + build pass. |
-| 4 | `docs/market-maker-recommendation-design` · `a1d5c69` | Thêm nghiên cứu và thiết kế recommendation; khả năng runtime như workbench. 5 tests + build pass. |
-| 5 | `feat/market-maker-live-ai` · `dc2eac8` | Backend provider, env và tests AI; UI chưa nối nút AI. 10 tests + build pass. |
-| 6 | `feat/market-maker-ai-workbench` · `417c4db` | UI AI và data docs nối backend. 10 tests + build pass ở commit gốc. |
+## Dữ liệu và AI quyết định như thế nào
 
-GitHub Actions chạy khi push/PR, đóng gói preview thành artifact; không tự deploy hoặc merge. Branch protection/required checks phải được cấu hình trên GitHub nếu muốn bắt buộc CI trước merge. Kết quả lỗi `npm run check` ở hai commit đầu là trạng thái lịch sử; CI của từng stage dùng điều kiện kiểm tra scaffold, engine hoặc UI khi các file tương ứng tồn tại.
+- Basket là một thành phần giỏ cố định, có thể nhiều SKU; không phải phân bố mọi giỏ khách mua.
+- Tiền đồng nguyên, tỷ lệ bps; BigInt ở bước trung gian và làm tròn từng khoản phí trên mỗi đơn.
+- Cùng voucher thực tế dùng cùng đường CVR trên cả đường mô phỏng lẫn AI.
+- Chi phí/phí/thuế/hoàn hàng, tồn, quota và ngân sách là typed inputs; engine không cho AI sửa.
+- Seller notes và CSV lịch sử chỉ ảnh hưởng cách AI đề xuất voucher; không tự biến thành traffic/forecast.
+- AI trả candidate; engine bổ sung baseline/measured/current, tính lại rồi xếp hạng theo mục tiêu.
+- Mọi kết quả ghi `scenario_only`, phiên bản schema/engine và snapshot input; OpenAI bổ sung prompt/model/usage/context metadata.
+- Export ghi **phương án đang chọn**, bao gồm kết quả và context AI nếu đang xem AI.
 
-## Đối chiếu repo hàng xóm và giới hạn
+Xem [data contract](docs/data-contract.md) và [API docs](docs/api.md). CSV template chỉ có header; không giả dữ liệu bán hàng thật.
 
-Đã đối chiếu `../margin-guard`: backend đó tách router theo miền, có domain model/contracts chặt và dùng giỏ hàng làm đơn vị tính, tiền đồng nguyên và rate bps. Market Maker học cách chia route/validate boundary, nhưng **không dùng chung contract hay engine** với Margin Guard. Không truyền trực tiếp input giữa hai API: ví dụ `15` ở fee UI này là 15%, không phải 15 bps.
+## Phạm vi đã biết
 
-Market Maker vẫn giới hạn một SKU/đơn, phí tổng hợp sau voucher và traffic/uplift do người dùng giả định. Chưa tính giỏ nhiều SKU, hoàn xu, voucher sàn cộng dồn, hoàn hàng, shipping/ads hoặc bảng phí thực tế. Mã/phạm vi/thời gian chỉ là metadata kế hoạch, không tự thực thi eligibility hoặc đồng bộ Shopee. Cùng uplift đang được dùng cho các voucher có discount; chưa học elasticity/framing. Kết quả là tốt nhất trong các ứng viên dưới giả định nhập, không phải tối ưu toàn thị trường hay dự báo được hiệu chỉnh.
+Mô hình fee/tax tổng hợp không phải bảng phí Shopee đã xác minh. Response curve do người dùng giả định, chưa được hiệu chuẩn hay chứng minh causal lift. Không hỗ trợ toàn bộ stacking, phân bổ lãi từng SKU hoặc tự publish voucher lên sàn. Thiếu credentials thì AI disabled. Tests fixture không xác minh chất lượng live model.
 
-CSV template chỉ là contract đề xuất, chưa có ingest/calibration. Không gửi thông tin cá nhân hoặc secrets trong AI context. Context giúp tạo candidate; không âm thầm override số liệu typed của người bán.
+## Deploy và sản phẩm
 
-## Các bước để triển khai production công khai
+- [Deploy local/cloud, credentials và rollback](docs/deployment.md)
+- [Product brief đầy đủ + outline pitching slides](docs/product-pitch.md)
+- [Checklist sửa critique và giới hạn còn lại](docs/migration-status.md)
+- [Nghiên cứu](docs/research.md)
 
-1. Bổ sung gateway xác thực, quản lý phiên/người dùng, tenant authorization, TLS và cấu hình domain/Host tin cậy; không mở trực tiếp local server hiện tại ra Internet.
-2. Lưu cấu hình/kết quả theo version với provenance và audit trail, database migrations, backup/restore; hiện người dùng chỉ xuất JSON.
-3. Thêm quota/cost budget theo tenant và giới hạn phân tán, monitoring/alerting, log vận hành có redaction và kiểm tra phục hồi. Rate/concurrency hiện tại chỉ có hiệu lực trong một process.
-4. Quyết định tích hợp engine giỏ hàng Margin Guard hoặc mở rộng domain có kiểm thử parity: integer money/bps, fee schedule version, phân bổ voucher, shipping, hoàn hàng và seller funding. Không đổi tên mô hình đơn SKU thành mô hình tài chính production.
-5. Kiểm thử browser và end-to-end với provider trong môi trường triển khai, kiểm tra tải, lỗi mạng và quy trình release/rollback. Chỉ bật ingest/lịch sử khi có schema, quality report và quy tắc provenance rõ.
-
-## Tài liệu
-
-- [HTTP contract và vận hành](docs/api.md)
-- [Nghiên cứu và thống kê](docs/research.md)
-- [Kiến trúc recommendation](docs/architecture.md)
-- [Data contract và CSV](docs/data-contract.md)
-- [CSV template](data/history-template.csv)
+Deployment cloud/Supabase/OpenAI thật cần cấu hình tài khoản; repository cung cấp scaffold và test offline, không khẳng định đã deploy hoặc kiểm chứng cloud khi chưa có credentials.

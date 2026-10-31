@@ -1,59 +1,44 @@
-# Dữ liệu để chọn voucher phù hợp sản phẩm và người bán
+# Historical evidence and financial input v2
 
-Trạng thái: **contract đề xuất**. Prototype hiện dùng baseline kịch bản; chưa triển khai nhập CSV, hiệu chuẩn demand, nối Shopee hoặc suy ra tác động nhân quả từ lịch sử. File [history-template.csv](../data/history-template.csv) chỉ chứa header, không có số liệu được giả làm dữ liệu thật.
+The canonical executable contract is `contracts/model.ts`: TypeBox JSON Schema, inferred TypeScript types and strict runtime parsers. The financial engine receives a fixed basket with explicit SKU quantities, stock, integer VND prices/costs/packaging, a fixed/percentage voucher, seller funding, fees/tax, shipping/advertising, expected returns, quota and budget. Rates use integer basis points: 1%=100bps. A voucher qualifies on the full basket, while stock is constrained by its scarcest line. The model does not infer a real distribution of customer baskets or verified platform fee rules.
 
-## Vì sao cần dữ liệu
+`assumptions.response_curve` explicitly states the seller's assumed relationship between effective buyer discount and conversion. Zero discount must map to baseline conversion; discount points increase and multipliers cannot decrease. Both ordinary and AI proposals use the same curve and exact integer calculations. Historical evidence never silently changes this curve. Results are tagged `mode:scenario_only`, with schema and engine versions.
 
-Với giá trị giỏ hàng đủ điều kiện `B`, voucher 50% cap 10.000đ cho mức giảm `min(0,5 × B, 10.000đ)`, trước quy tắc làm tròn của engine. Voucher cố định 10.000đ cho mức giảm `min(B, 10.000đ)`. Khi `B ≥ 20.000đ`, hai voucher giảm cùng số tiền **nếu** có cùng min spend, eligibility, quota, thời gian, stacking và nguồn tài trợ. Ví dụ giỏ 40.000đ: cả hai giảm 10.000đ; giỏ 15.000đ: lần lượt 7.500đ và 10.000đ nếu đều đủ điều kiện.
+## Import a small aggregate history CSV
 
-Số tiền bằng nhau không chứng minh hiệu quả hành vi bằng nhau: cách hiển thị “50%” và “10k” có thể đổi tỷ lệ click, đổi giỏ và redeem. Chưa đo thì phải xem tác động này là chưa biết. Cũng chưa thể kết luận “tốt nhất” nếu chưa biết COGS, phí, return cost, tồn kho, mục tiêu và phân bố giỏ hàng của shop.
-
-## Grain và đơn vị
-
-CSV là dữ liệu **tổng hợp theo shop ẩn danh × time bucket × campaign × experiment arm × segment × SKU × basket band**. Các dòng là các ô không giao nhau; không nhân bản tổng visits/orders toàn shop lên từng SKU. Mỗi đơn được gán một primary SKU theo quy tắc cố định để cộng orders mà không double count; line-level units/revenue/cost được phân bổ về ô đó. `sku_id=__ALL__` dùng khi chỉ có dữ liệu shop; không cộng các dòng aggregate đó với dòng chi tiết.
-
-Không gửi tên, điện thoại, địa chỉ, email, buyer ID hay nội dung chat. `shop_key` là mã nội bộ giả danh. Segment là cohort tổng hợp (new/returning/unknown), không phải hồ sơ cá nhân. Gộp cohort quá nhỏ theo chính sách dữ liệu của team.
-
-| Nhóm field | Ý nghĩa |
-|---|---|
-| `bucket_start`, `bucket_end`, `timezone` | ISO timestamp có offset; thường bucket theo giờ ngày sale, ngày ở giai đoạn thường; timezone Asia/Ho_Chi_Minh |
-| `shop_key`, `campaign_id`, `event_type`, `category_id`, `sku_id`, `segment`, `basket_band` | Context để so sánh cùng shop/category/khách/giỏ; event_type normal/mega_sale; basket band lấy trước voucher |
-| `experiment_id`, `arm`, `assignment_unit`, `allocation_probability_bps` | Metadata thử nghiệm ngẫu nhiên; để trống nếu observational; không tự nhận causal |
-| `eligible_exposures`, `product_clicks`, `product_visits`, `orders`, `units` | Exposure đủ điều kiện, click, visit và đơn hoàn tất đặt; cùng phạm vi attribution/window được ghi trong manifest |
-| `voucher_redemptions`, `cancelled_orders`, `returned_orders`, `refused_orders`, `outcome_matured_at` | Dùng voucher và outcomes; cancelled/returned/refused phải phân loại loại trừ nhau; chờ đủ cửa sổ outcome |
-| `gross_sales_dong`, `shop_discount_dong`, `seller_platform_cofund_dong`, `platform_subsidy_dong` | Tổng giá trị và khoản trợ giá ở ô; subsidy sàn không được trừ vào chi phí shop lần nữa |
-| `cogs_dong`, `packaging_dong`, `seller_shipping_dong`, `platform_fees_dong`, `tax_dong`, `ad_spend_dong`, `return_loss_dong` | Tổng chi phí đã phân bổ cho ô; quy ước fee/tax không trùng; return_loss chỉ phần bổ sung chưa có trong COGS/các dòng khác |
-| `reference_price_dong`, `selling_price_dong`, `stock_start_units`, `stockout_minutes`, `capacity_orders` | Giá, khả năng bán và supply censoring; nếu giá đổi thì tách bucket |
-| `voucher_type`, `voucher_value`, `voucher_cap_dong`, `min_spend_dong`, `quota`, `seller_funding_bps`, `stacking_policy_id` | Fixed: value đồng; percent: value bps (50%=5000); policy ID trỏ bản ghi eligibility/time/stacking trong manifest |
-| `traffic_source`, `fee_schedule_version`, `source`, `observed_at`, `data_status` | Organic/paid/mixed, version phí, nguồn export và trạng thái verified/user/default |
-
-Manifest đi cùng dataset phải ghi: định nghĩa exposure, attribution window, thời điểm hoàn tất return window, cách phân bổ chi phí/primary SKU, eligibility voucher, thời gian hiệu lực, khuyến mãi đồng thời và dữ liệu thiếu. Blank khác zero; không điền zero cho dữ liệu không có.
-
-## Tối thiểu để tính và để học
-
-Để tính lợi nhuận từng phương án: giá/basket, COGS, fees có basis rõ, seller funding, voucher rule, shipping/ads/return cost và constraints. Để ước lượng demand: exposures/visits, orders, phân bố basket, redemption, giá, campaign/time/segment và stock availability. Orders một mình không phân biệt traffic tăng với conversion tăng; stockout khiến observed demand bị chặn dưới.
-
-Để học framing 50% cap10k so với fixed10k: chạy hai arm cùng giá, eligibility, min spend và ngân sách, randomize ở đơn vị tránh một khách nhìn cả hai ưu đãi trong cùng cửa sổ. CSV chỉ giữ tổng hợp và assignment metadata. Outcome chính là contribution profit trên eligible exposure; phụ là CVR, redemption, AOV, return/cancel và budget burn. Phải định nghĩa denominator trước; không chỉ so profit trên những đơn đã redeem vì selection bias.
-
-Tính `CVR = orders / product_visits`, `CTR = product_clicks / eligible_exposures` khi denominator tương ứng thật sự cùng scope. Với nhiều dòng, dùng tổng numerator/tổng denominator, không trung bình tỷ lệ. Redeem rate phải nói rõ tính trên orders hay voucher-eligible exposure. Zero denominator trả unavailable. Profit cần engine với fee schedule và return accounting thống nhất, không để LLM tự cộng.
-
-Không đặt một sample size chung cho mọi shop. Tính trước từ baseline metric, minimum detectable effect, variance, randomization unit, mức tin cậy và power; xét seasonality, clustering và multiple comparisons. Holdout theo thời gian/campaign giúp đo dự báo; chỉ thử nghiệm đủ thiết kế hoặc phương pháp causal có giả định được bảo vệ mới hỗ trợ kết luận tác động. Không ngoại suy ngày thường thành 11.11 bằng một hệ số toàn sàn cố định.
-
-## Seller context và API đề xuất
-
-Ngoài số liệu, có thể nhận `seller_context` là string tùy chọn: “shop mới, ưu tiên khách mới; biên thấp, không muốn lỗ; chỉ xử lý được ... đơn/ngày”. Context giúp Setup hỏi/đề xuất cấu hình. Những con số hoặc constraints trích từ lời người bán phải trở thành field typed có provenance `user`, hiển thị để xác nhận; không được âm thầm override giá vốn/ngân sách đã nhập.
-
-Đề xuất request tương lai:
+`POST /api/history/validate` accepts `{ "csv": "label,visits,orders,revenue_dong,voucher_spend_dong\nSale A,1000,100,29900000,2000000" }` and returns a validated history object directly:
 
 ```json
 {
-  "config_id": "cfg_example",
-  "seller_context": "Ưu tiên lợi nhuận và tránh hết voucher trước buổi tối",
-  "history_dataset_id": null,
-  "objective": "max_profit"
+  "source": "user_reported",
+  "campaigns": [
+    {
+      "label": "Sale A",
+      "visits": 1000,
+      "orders": 100,
+      "revenue_dong": 29900000,
+      "voucher_spend_dong": 2000000
+    }
+  ]
 }
 ```
 
-`history_dataset_id=null` nghĩa là chưa có dataset; output phải ghi `scenario_only`, không `calibrated`. Endpoint ingest/calibrate và field trên là **thiết kế**, không cam kết đã được prototype phục vụ. Dữ liệu lịch sử sau ingest cần schema validation, manifest/version/hash và quality report trước khi cho model đọc phần tóm tắt.
+The shipped [CSV template](../data/history-template.csv) contains headers only. Add actual aggregates; a header-only file is rejected because it contains no evidence. The importer accepts UTF-8 BOM, CRLF, quoted commas and escaped quotes. It rejects malformed quoting, extra or missing columns, internal blank rows, blank numeric values, negative/fractional/exponential numbers and unsafe/out-of-range values. A blank means missing and is never converted to zero. Numeric cells contain plain nonnegative decimal integers without separators or surrounding spaces.
 
-LLM nhận aggregate context, assumptions và result refs; không nhận raw buyer data. Candidate generation dùng seller objective và product economics. Ranking vẫn do engine/optimizer làm; trả “tốt hơn trong kịch bản X” và yếu tố khiến thứ hạng đổi, thay vì “voucher này chắc chắn tối ưu cho shop”.
+Headers must be exactly `label,visits,orders,revenue_dong,voucher_spend_dong` in that order. CSV content is limited to 32,768 UTF-8 bytes and 1–20 data rows; the HTTP JSON body limit may be tighter because it also includes JSON quoting. Labels are trimmed, contain at most 100 characters, cannot contain control/invisible format characters, and cannot start with spreadsheet formula prefixes `=`, `+`, `-` or `@`. Duplicate labels are rejected after trimming, Unicode normalization and case folding. Visits/orders are at most 100,000,000; money totals are at most 1,000,000,000,000 VND. Orders cannot exceed visits in this one-order-per-session aggregate contract.
+
+Each row is **one distinct campaign with a nonoverlapping attribution window and the same scope for visits, completed orders and attributed revenue/spend**. Do not repeat shop totals over SKU or segment rows. Do not mix a campaign total with its component rows. Label uniqueness detects accidental duplicate rows; the application cannot verify whether distinct labels conceal overlapping campaigns. You must define campaign windows and outcome maturity outside this compact import. Revenue and spend here are descriptive historical aggregates, not a replacement for the engine's cost/fee/returns inputs.
+
+## What historical context changes
+
+The frontend places validated evidence in recommendation `context.history` next to `context.seller_notes`. Evidence is always `source:user_reported`; CSV validation verifies structure and basic consistency, not authenticity or experimental quality. The provider can use these bounded aggregates to propose voucher candidates. It cannot override typed seller costs, stock, budget, basket or the response curve. The engine recalculates every candidate and includes the existing no-voucher, reduced-voucher and current-voucher choices.
+
+Descriptive conversion is total orders / total visits; average order value is total revenue / total orders. Use summed numerators/denominators, never an unweighted mean of campaign ratios. A zero denominator yields unavailable. Recommendation decision context identifies the source/campaign count, descriptive metrics and whether history affected the forecast; `applied_to_forecast` is always false at this stage. No CSV data is represented as a fitted elasticity, causal voucher uplift or calibrated demand prediction.
+
+To estimate voucher effects, collect comparable exposure, treatment assignment, basket distributions, costs, stockouts, returns and other promotions with mature outcomes, then apply an explicitly evaluated model or controlled experiment. A campaign's orders alone cannot separate traffic, voucher framing, seasonality and selection effects. This compact importer does not implement that research workflow.
+
+## Privacy and reproducibility
+
+Use campaign labels and aggregate counts only. Do not import buyer names, phone numbers, addresses, emails, IDs or chat logs. Validation rejects extra CSV columns; seller notes remain free text, so the user must avoid personal information there. Calling AI sends the selected aggregate context and configured input to the provider. Saved/exported decisions should preserve the input, assumed curve, structured evidence, model identity, versions, ranking basis and limitations together.
+
+Money calculations use exact BigInt intermediates. Discount, seller funding, fees, tax and expected returns round half away from zero per order, before campaign aggregation. Returned orders refund revenue and tax while retaining configured nonrefundable fees and sunk costs. Voucher budget is conservatively not refunded when an order returns. This is a transparent scenario accounting convention, not a verified marketplace settlement integration.

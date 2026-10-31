@@ -6,27 +6,27 @@ Ngày kiểm tra: 31/10/2026. Đây là cơ sở nghiên cứu, không phải b�
 
 [Shopee Uni PDF](https://cdngarenanow-a.akamaihd.net/shopee/seller/seller_cms/6d2e4faf6824474888d82452fbd4ce64/T%C3%ACm%20hi%E1%BB%83u%20c%C3%A1c%20CCKM%20c%E1%BB%A7a%20Shopee.pdf), cập nhật 08/10/2020. Trang 81 là mẹo; cấu hình nằm ở trang 73–78. Đây là quy tắc lịch sử, chưa xác nhận chính sách hiện hành.
 
-| Input | Theo tài liệu |
-|---|---|
-| Phạm vi | Toàn shop / sản phẩm chọn |
-| Loại | Khuyến mãi / hoàn xu |
-| Giảm | Tiền / phần trăm; hoàn xu chỉ phần trăm |
-| Ràng buộc | Trần giảm %, đơn tối thiểu, thời gian, số lượng |
-| Định danh | Tên chương trình; mã A–Z/0–9 tối đa 5 ký tự |
-| Lượt dùng | Một lần/người mua/mã |
-| Hiển thị | Công khai, Live/Feed, chia sẻ mã; voucher sản phẩm không công khai |
+| Input     | Theo tài liệu                                                      |
+| --------- | ------------------------------------------------------------------ |
+| Phạm vi   | Toàn shop / sản phẩm chọn                                          |
+| Loại      | Khuyến mãi / hoàn xu                                               |
+| Giảm      | Tiền / phần trăm; hoàn xu chỉ phần trăm                            |
+| Ràng buộc | Trần giảm %, đơn tối thiểu, thời gian, số lượng                    |
+| Định danh | Tên chương trình; mã A–Z/0–9 tối đa 5 ký tự                        |
+| Lượt dùng | Một lần/người mua/mã                                               |
+| Hiển thị  | Công khai, Live/Feed, chia sẻ mã; voucher sản phẩm không công khai |
 
 Không hard-code giới hạn cũ thành policy hiện hành. Lưu `policyVersion`, nguồn, ngày hiệu lực và trạng thái xác minh. Budget, phí, tồn kho và khẩu vị rủi ro là input Market Maker bổ sung.
 
 ## Thống kê và mức độ áp dụng
 
-| Bằng chứng | Số liệu đã kiểm tra | Dùng vào Market Maker | Giới hạn |
-|---|---|---|---|
-| [Shopee Marketing Solutions, 11.11 2021](https://ms.shopee.com/news/shopee-excites-shoppers-and-uplifts-businesses-with-new-record-of-over-2-billion-items-sold-across-11-11-big-sale/) | Hơn 2 tỷ sản phẩm suốt chiến dịch; seller lần đầu tham gia có số đơn ngày 11/11 gấp 18 lần ngày trung bình; Premium brands bán gấp 50 lần tuần trước | Stress test nhiều mức cầu, phân nhóm seller | Thông cáo marketing khu vực; không phải traffic VN, không phải causal uplift. Trang trả 403 khi mở trực tiếp; số liệu đọc từ bản index tìm kiếm |
-| [Alibaba, 11.11 2024](https://www.alibabagroup.com/en-US/document-1792798062653997056) | Hơn 800.000 merchants dùng hơn 2 triệu phân tích traffic; gần 290.000 merchants có tăng trưởng sales cho hơn 1,6 triệu sản phẩm với Quanzhantui | Chứng cứ nhu cầu phân tích/AI hỗ trợ merchant ở quy mô lớn | Tmall/Taobao Trung Quốc, 14/10–11/11; số liệu chưa kiểm toán, không chứng minh LLM tạo incremental profit |
-| [RAP, EMNLP 2023](https://arxiv.org/abs/2305.14992) | LLaMA-33B + planning hơn GPT-4 CoT 33% tương đối trong một setting plan generation | Sinh nhiều candidate rồi đánh giá reward bằng tool | Không phải bài toán voucher; không được nói lợi nhuận tăng 33% |
-| [Tan et al., NeurIPS 2024](https://papers.neurips.cc/paper_files/paper/2024/file/6ed5bf446f59e2c6646d23058c86424b-Paper-Conference.pdf) | Ablation 3 phương pháp LLM forecasting trên 8 benchmark; bỏ/thay LLM thường không làm giảm chất lượng | Forecast phải có baseline thống kê và ablation | Không kết luận mọi mô hình ngôn ngữ đều vô dụng |
-| [Qiu et al., 2026, preprint](https://arxiv.org/abs/2602.14744) | 8 tỷ observations, 17 scenarios, 4 horizons; pre-alignment hơn post-alignment ở trên 90% tasks | Có hướng nghiên cứu hybrid khi đủ dữ liệu | Kết quả theo setup của tác giả; không chứng minh hiệu quả seller VN |
+| Bằng chứng                                                                                                                                                                              | Số liệu đã kiểm tra                                                                                                                                  | Dùng vào Market Maker                                      | Giới hạn                                                                                                                                        |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Shopee Marketing Solutions, 11.11 2021](https://ms.shopee.com/news/shopee-excites-shoppers-and-uplifts-businesses-with-new-record-of-over-2-billion-items-sold-across-11-11-big-sale/) | Hơn 2 tỷ sản phẩm suốt chiến dịch; seller lần đầu tham gia có số đơn ngày 11/11 gấp 18 lần ngày trung bình; Premium brands bán gấp 50 lần tuần trước | Stress test nhiều mức cầu, phân nhóm seller                | Thông cáo marketing khu vực; không phải traffic VN, không phải causal uplift. Trang trả 403 khi mở trực tiếp; số liệu đọc từ bản index tìm kiếm |
+| [Alibaba, 11.11 2024](https://www.alibabagroup.com/en-US/document-1792798062653997056)                                                                                                  | Hơn 800.000 merchants dùng hơn 2 triệu phân tích traffic; gần 290.000 merchants có tăng trưởng sales cho hơn 1,6 triệu sản phẩm với Quanzhantui      | Chứng cứ nhu cầu phân tích/AI hỗ trợ merchant ở quy mô lớn | Tmall/Taobao Trung Quốc, 14/10–11/11; số liệu chưa kiểm toán, không chứng minh LLM tạo incremental profit                                       |
+| [RAP, EMNLP 2023](https://arxiv.org/abs/2305.14992)                                                                                                                                     | LLaMA-33B + planning hơn GPT-4 CoT 33% tương đối trong một setting plan generation                                                                   | Sinh nhiều candidate rồi đánh giá reward bằng tool         | Không phải bài toán voucher; không được nói lợi nhuận tăng 33%                                                                                  |
+| [Tan et al., NeurIPS 2024](https://papers.neurips.cc/paper_files/paper/2024/file/6ed5bf446f59e2c6646d23058c86424b-Paper-Conference.pdf)                                                 | Ablation 3 phương pháp LLM forecasting trên 8 benchmark; bỏ/thay LLM thường không làm giảm chất lượng                                                | Forecast phải có baseline thống kê và ablation             | Không kết luận mọi mô hình ngôn ngữ đều vô dụng                                                                                                 |
+| [Qiu et al., 2026, preprint](https://arxiv.org/abs/2602.14744)                                                                                                                          | 8 tỷ observations, 17 scenarios, 4 horizons; pre-alignment hơn post-alignment ở trên 90% tasks                                                       | Có hướng nghiên cứu hybrid khi đủ dữ liệu                  | Kết quả theo setup của tác giả; không chứng minh hiệu quả seller VN                                                                             |
 
 Không tìm được bộ dữ liệu công khai đã xác minh có đủ session → voucher exposure → redemption → net profit theo SKU/ngày cho Shopee VN 11.11. Vì vậy chưa có cơ sở hợp lệ để cung cấp một hệ số traffic hoặc conversion uplift chung.
 
@@ -41,14 +41,14 @@ Không tìm được bộ dữ liệu công khai đã xác minh có đủ sessio
 
 ## Dữ liệu cần thu và thống kê cần tính
 
-| Nhóm | Fields tối thiểu | Thống kê / kiểm tra |
-|---|---|---|
-| Sản phẩm | SKU, category, price, COGS, stock, lead time, units/order | Contribution/unit, margin theo giỏ hàng, khả năng hết hàng |
-| Chi phí | Phí theo loại/base tính, shipping seller-funded, ads, packaging, returns | Net profit thực nhận; không cộng trùng phí |
-| Funnel theo giờ | Impressions, clicks, sessions, orders, channel, spend | CTR=click/impressions; CVR=orders/sessions; phân biệt traffic với orders |
-| Voucher | Exposure, claims, redemption, basket, eligible SKU, seller-funded amount | Redemption rate với denominator rõ; tỷ lệ đạt ngưỡng; chi phí thực |
-| Sự kiện | Campaign, ngày/giờ, channel, historical comparable event | Uplift theo nhóm, median và quantile, không chỉ average |
-| Kết quả | Fulfilled/cancelled/returned, payout timestamp | Profit sau hoàn trả; loại leakage từ tương lai |
+| Nhóm            | Fields tối thiểu                                                         | Thống kê / kiểm tra                                                      |
+| --------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| Sản phẩm        | SKU, category, price, COGS, stock, lead time, units/order                | Contribution/unit, margin theo giỏ hàng, khả năng hết hàng               |
+| Chi phí         | Phí theo loại/base tính, shipping seller-funded, ads, packaging, returns | Net profit thực nhận; không cộng trùng phí                               |
+| Funnel theo giờ | Impressions, clicks, sessions, orders, channel, spend                    | CTR=click/impressions; CVR=orders/sessions; phân biệt traffic với orders |
+| Voucher         | Exposure, claims, redemption, basket, eligible SKU, seller-funded amount | Redemption rate với denominator rõ; tỷ lệ đạt ngưỡng; chi phí thực       |
+| Sự kiện         | Campaign, ngày/giờ, channel, historical comparable event                 | Uplift theo nhóm, median và quantile, không chỉ average                  |
+| Kết quả         | Fulfilled/cancelled/returned, payout timestamp                           | Profit sau hoàn trả; loại leakage từ tương lai                           |
 
 Dùng time split và holdout nguyên event. So seasonal-naive với forecast có event/category/channel, báo MAE/WAPE (xử lý actual tổng bằng 0), quantile loss và interval coverage. Đánh giá incremental voucher effect qua A/B hoặc thiết kế causal có kiểm soát; tương quan discount–sales không đủ để kết luận uplift.
 

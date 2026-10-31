@@ -11,6 +11,7 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -19,8 +20,27 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
+      - run: npm run format:check
+      - run: npm run eval:ai
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - name: Package backend and contract source at the tested commit
+        run: tar -czf backend-source.tar.gz backend/src contracts package.json package-lock.json backend/package.json frontend/package.json tsconfig.json Dockerfile
       - uses: actions/upload-artifact@v4
         with:
-          name: market-maker-preview
-          path: dist/
+          name: market-maker-${{ github.sha }}
+          path: |
+            frontend/dist/
+            backend-source.tar.gz
           if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-report-${{ github.sha }}
+          path: playwright-report/
+          retention-days: 7
+      - name: Deploy the tested main commit when a Render hook is configured
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: node scripts/deploy.mjs
