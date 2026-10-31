@@ -34,7 +34,7 @@ export function evaluate(input) {
     const score = x.risk === 'safe' ? worst : x.risk === 'growth' ? scenarios[1].revenue : .7 * expected + .3 * worst;
     return {...s, discount:d, scenarios, worst, expected, score};
   }).sort((a,b)=>b.score-a.score);
-  const fees = verified ? {catalog_version:feeCatalog.version, per_order:{without_voucher:feesFor(0), with_voucher:feesFor(strategies[0].discount)}} : null;
+  const fees = verified ? {catalog_version:feeCatalog.version, per_order:{without_voucher:feesFor(0), with_voucher:feesFor(strategies.find(s=>s.discount>0)?.discount ?? 0)}} : null;
   const portfolio = verified ? planPortfolio({products:[{name:x.name, price:x.price, cost:x.cost, category:x.category}], customers:x.traffic, vouchers:x.quota, floor:x.floor, programme:x.programme}) : null;
   return {input:x, strategies, recommended:strategies[0], eligible:x.price >= x.minimum, fees, portfolio, assumptions:verified ? ['Một sản phẩm / đơn; chưa tính hoàn hàng, vận chuyển hoặc quảng cáo.', ...feeAssumptions, 'Traffic và uplift do bạn nhập, không phải dự báo hoặc xác suất thống kê.'] : ['Một sản phẩm / đơn; chưa tính hoàn hàng, vận chuyển, quảng cáo hoặc voucher sàn.', 'Phí tổng hợp tính trên doanh thu sau voucher; cần thay bằng bảng phí đã xác minh.', 'Traffic và uplift do bạn nhập, không phải dự báo hoặc xác suất thống kê.', 'Thời gian, phạm vi và mã voucher được lưu trong kế hoạch; không tự đồng bộ Shopee.']};
 }

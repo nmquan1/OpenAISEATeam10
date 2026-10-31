@@ -38,3 +38,8 @@ test('a category switches profit to the verified catalog and returns its version
   assert.ok(verified.recommended.expected < legacy.recommended.expected);
   assert.ok(verified.portfolio);
 });
+
+test('with-voucher fees use a strategy that actually discounts', () => {
+  const r = evaluate({...defaults, category:'beauty'});
+  assert.ok(r.fees.per_order.with_voucher.total < r.fees.per_order.without_voucher.total);
+});
