@@ -43,7 +43,6 @@ export function Results({
     <section aria-labelledby="results-heading" className="results-section">
       <div className="section-heading">
         <div>
-          <p className="eyebrow">03 · SO SÁNH & QUYẾT ĐỊNH</p>
           <h2 id="results-heading">
             {ai ? 'Ứng viên AI đã được engine kiểm tra' : 'Bức tranh lợi nhuận của bạn'}
           </h2>
@@ -121,8 +120,8 @@ export function Results({
       <article className="card recommendation">
         <p className="eyebrow">
           {selected.id === result.recommended.id
-            ? 'ĐỨNG ĐẦU THEO TIÊU CHÍ ĐÃ CHỌN'
-            : 'PHƯƠNG ÁN BẠN ĐANG CHỌN'}
+            ? 'Voucher nên chạy theo mục tiêu của bạn'
+            : 'Phương án bạn đang xem'}
         </p>
         <h3>{selected.name}</h3>
         <p>{describeVoucher(selected.voucher)}</p>

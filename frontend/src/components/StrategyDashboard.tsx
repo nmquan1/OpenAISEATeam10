@@ -37,7 +37,7 @@ export function StrategyDashboard({
     <section className="strategy-dashboard" aria-label={`Dashboard chiến lược ${strategy.name}`}>
       <div className="dashboard-heading">
         <div>
-          <p className="eyebrow">KẾT QUẢ ƯỚC TÍNH · TOÀN CHIẾN DỊCH</p>
+          <p className="eyebrow">Ước tính cho cả chiến dịch</p>
           <h4>Kịch bản {scenarioLabels[scenario].toLowerCase()}</h4>
         </div>
         <div className="toggle" role="group" aria-label="Kịch bản traffic">

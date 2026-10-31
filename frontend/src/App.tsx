@@ -35,6 +35,14 @@ function initialDraft(): Draft & { notice: string } {
     };
   }
 }
+const steps = [
+  { id: 'input', number: '1', label: 'Nhập số liệu' },
+  { id: 'results', number: '2', label: 'Kết quả' },
+  { id: 'ai', number: '3', label: 'Nhờ AI' },
+  { id: 'more', number: '', label: 'Công cụ khác' },
+] as const;
+type StepId = (typeof steps)[number]['id'];
+
 function message(error: unknown) {
   if (error instanceof api.ApiError)
     return `${error.message}${error.requestId ? ` · Mã hỗ trợ: ${error.requestId}` : ''}`;
@@ -67,7 +75,17 @@ export function App() {
   const fileInput = useRef<HTMLInputElement>(null);
   const runsController = useRef<AbortController | null>(null);
   const historyController = useRef<AbortController | null>(null);
+  const [step, setStep] = useState<StepId>('input');
+  const tabsRef = useRef<HTMLDivElement>(null);
   const result = source === 'ai' ? aiResult : evaluation;
+
+  /** Switch step and, if the page is scrolled past the tabs, bring the new step's top into view. */
+  function goTo(next: StepId) {
+    setStep(next);
+    const tabs = tabsRef.current;
+    if (tabs && tabs.getBoundingClientRect().top <= 0)
+      window.scrollTo({ top: tabs.offsetTop - 1, behavior: 'auto' });
+  }
 
   useEffect(() => {
     const controller = new AbortController();
@@ -203,6 +221,7 @@ export function App() {
         setStatus(
           `Đã kiểm tra ${data.strategies.length} phương án, gồm baseline và ứng viên AI; hiển thị ${getOfferedStrategies(data).length} phương án đứng đầu.`,
         );
+        goTo('results');
       }
     } catch (reason) {
       if (!controller.signal.aborted) {
@@ -290,71 +309,98 @@ export function App() {
       if (historyController.current === controller) setHistoryBusy(false);
     }
   }
+  function stepSummary(id: StepId) {
+    if (id === 'input') return input.product.name;
+    if (id === 'results') {
+      if (evaluating) return 'Đang tính…';
+      return result ? `Đề xuất: ${result.recommended.name}` : 'Chưa có kết quả';
+    }
+    if (id === 'ai') {
+      if (aiBusy) return 'Đang tạo gợi ý…';
+      if (aiResult) return 'Đã có gợi ý';
+      return health?.aiConfigured ? 'Tùy chọn' : 'Chưa bật trên server';
+    }
+    return 'Danh mục voucher, lịch sử';
+  }
   return (
     <>
-      <a className="skip-link" href="#workspace">
-        Bỏ qua đến phần thiết lập
+      <a className="skip-link" href="#tab-input">
+        Bỏ qua đến các bước
       </a>
       <header className="site-header">
         <a className="brand" href="#">
           <span className="brand-mark" aria-hidden="true">
-            m↗
-          </span>{' '}
-          market maker <span className="brand-tag">STUDIO</span>
+            %
+          </span>
+          market maker
         </a>
-        <span className="header-note">Hiểu chi phí. Chọn voucher có cơ sở.</span>
+        <div className="actions">
+          <button className="secondary" type="button" onClick={() => fileInput.current?.click()}>
+            Nhập kế hoạch JSON
+          </button>
+          <button className="text-button" type="button" onClick={reset}>
+            Đặt lại mẫu
+          </button>
+          <input
+            className="sr-only"
+            type="file"
+            accept="application/json,.json"
+            ref={fileInput}
+            aria-label="Nhập tệp kế hoạch JSON"
+            onChange={(event) => {
+              void readImport(event.target.files?.[0]);
+            }}
+          />
+        </div>
       </header>
       <main>
         <section className="hero">
-          <div>
-            <p className="eyebrow">SALE STRATEGY STUDIO</p>
-            <h1>
-              Ngày sale lớn.
-              <br />
-              <span>Quyết định có cơ sở.</span>
-            </h1>
-            <p>
-              Thiết lập giỏ hàng, kiểm tra chi phí và khám phá voucher phù hợp với mục tiêu của
-              shop.
-            </p>
-          </div>
-          <div className="event-card" aria-hidden="true">
-            <span>CAMPAIGN PLAYBOOK</span>
-            <strong>11.11</strong>
-            <span>SẴN SÀNG TRƯỚC NGÀY SALE</span>
-          </div>
+          <h1>Chọn voucher 11.11 mà vẫn có lời</h1>
+          <p>
+            Nhập giá vốn, phí và lượng khách dự kiến. Công cụ so sánh lợi nhuận khi không chạy
+            voucher và khi chạy từng mức giảm. Đây là mô phỏng theo số liệu bạn nhập, không phải dự
+            báo, và không tự đổi voucher trên Shopee.
+          </p>
         </section>
-        <div className="scope-note">
-          <strong>Mô phỏng minh bạch, chưa phải dự báo.</strong> Traffic và phản ứng khách hàng do
-          bạn nhập; phí dùng catalog hoặc tự nhập. AI đề xuất cấu hình; engine tính tiền. App không
-          tự thay voucher trên Shopee.
-        </div>
-        <p className="local-mode">Workspace MVP dùng chung · không cần đăng nhập.</p>
         <div className="toolbar">
-          <div>
-            <p className="status">{notice}</p>
-            <p className="hint">
-              {draftStatus} Bản nháp dùng chung cho người sử dụng trình duyệt này.
-            </p>
-          </div>
-          <div className="actions">
-            <button className="secondary" type="button" onClick={() => fileInput.current?.click()}>
-              ↑ Nhập kế hoạch JSON
+          <p className="status">{notice}</p>
+          <p className="hint">{draftStatus}</p>
+        </div>
+        <div
+          className="step-tabs"
+          role="tablist"
+          aria-label="Các bước lập kế hoạch"
+          ref={tabsRef}
+          onKeyDown={(event) => {
+            const offset = { ArrowRight: 1, ArrowLeft: -1 }[event.key];
+            if (!offset) return;
+            event.preventDefault();
+            const index = steps.findIndex((item) => item.id === step);
+            const next = steps[(index + offset + steps.length) % steps.length]!.id;
+            setStep(next);
+            document.getElementById(`tab-${next}`)?.focus();
+          }}
+        >
+          {steps.map((item) => (
+            <button
+              key={item.id}
+              id={`tab-${item.id}`}
+              type="button"
+              role="tab"
+              aria-selected={step === item.id}
+              aria-controls={`panel-${item.id}`}
+              tabIndex={step === item.id ? 0 : -1}
+              onClick={() => setStep(item.id)}
+            >
+              <span className={`step-number${item.number ? '' : ' step-extra'}`} aria-hidden="true">
+                {item.number || '…'}
+              </span>
+              <span className="step-text">
+                <span className="step-label">{item.label}</span>
+                <small>{stepSummary(item.id)}</small>
+              </span>
             </button>
-            <button className="text-button" type="button" onClick={reset}>
-              Đặt lại mẫu
-            </button>
-            <input
-              className="sr-only"
-              type="file"
-              accept="application/json,.json"
-              ref={fileInput}
-              aria-label="Nhập tệp kế hoạch JSON"
-              onChange={(event) => {
-                void readImport(event.target.files?.[0]);
-              }}
-            />
-          </div>
+          ))}
         </div>
         {error && (
           <div className="notice error" role="alert">
@@ -364,135 +410,185 @@ export function App() {
         <p className="status live-status" role="status" aria-live="polite">
           {status}
         </p>
-        <div className="workspace" id="workspace">
-          <aside>
-            <StrategyForm
-              input={input}
-              onChange={changeInput}
-              busy={evaluating}
-              disabled={!health}
-              onSubmit={() => setEvaluateRevision((value) => value + 1)}
-            />
-          </aside>
-          <div className="analysis-column">
-            <ContextEditor
-              context={context}
-              onChange={changeContext}
-              onImportCsv={(file) => {
-                void importHistory(file);
-              }}
-              importBusy={historyBusy}
-              importDisabled={!health}
-            />
-            <AiPanel
-              health={health}
-              busy={aiBusy}
-              hasResult={Boolean(evaluation)}
-              onRecommend={() => {
-                void requestRecommendation();
-              }}
-              onCancel={() => cancelAI()}
-              onRefresh={() => setHealthRevision((value) => value + 1)}
-            />
-            {aiResult && (
-              <div className="result-source toggle" role="group" aria-label="Nguồn kết quả">
-                <button
-                  type="button"
-                  aria-pressed={source === 'evaluation'}
-                  onClick={() => {
-                    setSource('evaluation');
-                    setSelectedId(null);
-                  }}
-                >
-                  Phương án cơ sở
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={source === 'ai'}
-                  onClick={() => {
-                    setSource('ai');
-                    setSelectedId(null);
-                  }}
-                >
-                  Ứng viên có AI
-                </button>
-              </div>
-            )}
-            {result ? (
-              <Results
-                result={result}
-                selectedId={selectedId}
-                onSelect={setSelectedId}
-                onApply={apply}
-                context={context}
-                onExport={() => {
-                  const selection = getSelectedOffer(result, selectedId);
-                  exportPlan(
-                    result,
-                    selection,
-                    source === 'ai' && aiResult ? aiResult.context : context,
-                  );
-                  setStatus('Đã xuất đúng phương án đang chọn cùng đầu vào, kết quả và bối cảnh.');
+        <section
+          id="panel-input"
+          role="tabpanel"
+          aria-labelledby="tab-input"
+          className="step-panel narrow"
+          hidden={step !== 'input'}
+        >
+          <StrategyForm
+            input={input}
+            onChange={changeInput}
+            busy={evaluating}
+            disabled={!health}
+            onSubmit={() => {
+              setEvaluateRevision((value) => value + 1);
+              goTo('results');
+            }}
+          />
+        </section>
+        <section
+          id="panel-results"
+          role="tabpanel"
+          aria-labelledby="tab-results"
+          className="step-panel"
+          hidden={step !== 'results'}
+        >
+          {aiResult && (
+            <div className="result-source toggle" role="group" aria-label="Nguồn kết quả">
+              <button
+                type="button"
+                aria-pressed={source === 'evaluation'}
+                onClick={() => {
+                  setSource('evaluation');
+                  setSelectedId(null);
                 }}
-              />
-            ) : (
-              <section className="card empty-state">
-                <h2>{evaluating ? 'Đang tính kịch bản…' : 'Kết quả sẽ xuất hiện ở đây'}</h2>
-                <p>
-                  Nhập số liệu hợp lệ. Server sẽ tính lại baseline và hai cách cấu hình voucher.
-                </p>
-              </section>
-            )}
-            <PortfolioPanel input={input} disabled={!health || evaluating} />
-            {health && (
-              <details className="card">
-                <summary>Lịch sử phân tích dùng chung</summary>
-                <p className="hint">
-                  Các lần chạy được lưu trong workspace này và mọi người dùng workspace đều có thể
-                  xem. Tách biệt với lịch sử sale do người bán nhập. Chọn một lần chạy để khôi phục
-                  đầu vào và tính lại.
-                </p>
-                <button
-                  className="secondary"
-                  type="button"
-                  disabled={runsBusy}
-                  onClick={() => {
-                    void refreshRuns();
-                  }}
-                >
-                  {runsBusy ? 'Đang tải…' : 'Tải lịch sử'}
+              >
+                Phương án cơ sở
+              </button>
+              <button
+                type="button"
+                aria-pressed={source === 'ai'}
+                onClick={() => {
+                  setSource('ai');
+                  setSelectedId(null);
+                }}
+              >
+                Ứng viên có AI
+              </button>
+            </div>
+          )}
+          {result ? (
+            <Results
+              result={result}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              onApply={apply}
+              context={context}
+              onExport={() => {
+                const selection = getSelectedOffer(result, selectedId);
+                exportPlan(
+                  result,
+                  selection,
+                  source === 'ai' && aiResult ? aiResult.context : context,
+                );
+                setStatus('Đã xuất đúng phương án đang chọn cùng đầu vào, kết quả và bối cảnh.');
+              }}
+            />
+          ) : (
+            <section className="card empty-state">
+              <h2>{evaluating ? 'Đang tính kịch bản…' : 'Chưa có kết quả'}</h2>
+              <p>
+                {evaluating
+                  ? 'Server đang so sánh không voucher với các mức giảm.'
+                  : 'Kiểm tra lại số liệu ở bước 1. Kết quả hiện ra ngay khi số liệu hợp lệ.'}
+              </p>
+              {!evaluating && (
+                <button className="secondary" type="button" onClick={() => goTo('input')}>
+                  Về bước 1
                 </button>
-                {runsError && (
-                  <p role="alert" className="field-error">
-                    {runsError}
-                  </p>
-                )}
-                {runs.map((run) => (
-                  <div className="run-item" key={run.id}>
-                    <span>
-                      {new Date(run.createdAt).toLocaleString('vi-VN')} · {run.kind}
-                    </span>
-                    <button
-                      type="button"
-                      className="text-button"
-                      onClick={() => {
-                        changeInput(run.input);
-                        setContext(
-                          'provider' in run.result ? run.result.context : { seller_notes: '' },
-                        );
-                        setNotice(
-                          'Đã khôi phục đầu vào từ lịch sử; đang tính lại với engine hiện tại.',
-                        );
-                      }}
-                    >
-                      Khôi phục
-                    </button>
-                  </div>
-                ))}
-              </details>
-            )}
-          </div>
-        </div>
+              )}
+            </section>
+          )}
+          <nav className="step-nav" aria-label="Chuyển bước">
+            <button className="secondary" type="button" onClick={() => goTo('input')}>
+              Sửa số liệu
+            </button>
+            <button className="primary" type="button" onClick={() => goTo('ai')}>
+              Nhờ AI gợi ý thêm voucher
+            </button>
+          </nav>
+        </section>
+        <section
+          id="panel-ai"
+          role="tabpanel"
+          aria-labelledby="tab-ai"
+          className="step-panel narrow"
+          hidden={step !== 'ai'}
+        >
+          <ContextEditor
+            context={context}
+            onChange={changeContext}
+            onImportCsv={(file) => {
+              void importHistory(file);
+            }}
+            importBusy={historyBusy}
+            importDisabled={!health}
+          />
+          <AiPanel
+            health={health}
+            busy={aiBusy}
+            hasResult={Boolean(evaluation)}
+            onRecommend={() => {
+              void requestRecommendation();
+            }}
+            onCancel={() => cancelAI()}
+            onRefresh={() => setHealthRevision((value) => value + 1)}
+          />
+          <nav className="step-nav" aria-label="Chuyển bước">
+            <button className="secondary" type="button" onClick={() => goTo('results')}>
+              Quay lại kết quả
+            </button>
+          </nav>
+        </section>
+        <section
+          id="panel-more"
+          role="tabpanel"
+          aria-labelledby="tab-more"
+          className="step-panel narrow"
+          hidden={step !== 'more'}
+        >
+          <PortfolioPanel input={input} disabled={!health || evaluating} />
+          {health && (
+            <details className="card">
+              <summary>Lịch sử phân tích dùng chung</summary>
+              <p className="hint">
+                Các lần chạy được lưu trong workspace này và mọi người dùng workspace đều có thể
+                xem. Tách biệt với lịch sử sale do người bán nhập. Chọn một lần chạy để khôi phục
+                đầu vào và tính lại.
+              </p>
+              <button
+                className="secondary"
+                type="button"
+                disabled={runsBusy}
+                onClick={() => {
+                  void refreshRuns();
+                }}
+              >
+                {runsBusy ? 'Đang tải…' : 'Tải lịch sử'}
+              </button>
+              {runsError && (
+                <p role="alert" className="field-error">
+                  {runsError}
+                </p>
+              )}
+              {runs.map((run) => (
+                <div className="run-item" key={run.id}>
+                  <span>
+                    {new Date(run.createdAt).toLocaleString('vi-VN')} · {run.kind}
+                  </span>
+                  <button
+                    type="button"
+                    className="text-button"
+                    onClick={() => {
+                      changeInput(run.input);
+                      setContext(
+                        'provider' in run.result ? run.result.context : { seller_notes: '' },
+                      );
+                      setNotice(
+                        'Đã khôi phục đầu vào từ lịch sử; đang tính lại với engine hiện tại.',
+                      );
+                      goTo('results');
+                    }}
+                  >
+                    Khôi phục
+                  </button>
+                </div>
+              ))}
+            </details>
+          )}
+        </section>
         <footer>
           <span className="brand">market maker ↗</span>
           <p>Mỗi con số đều có giả định. Kiểm tra trước khi triển khai.</p>
