@@ -27,6 +27,7 @@ async function openStockLimitedShop(page: Page) {
     });
   });
   await page.goto('/');
+  await page.getByRole('tab', { name: /Kết quả/ }).click();
   await expect(page.getByRole('heading', { name: 'Bức tranh lợi nhuận của bạn' })).toBeVisible();
 }
 
@@ -66,6 +67,7 @@ test('failed AI stays clearly separate from a baseline-only simulation after rec
   await expect(explanation).toContainText('đã chạm tồn kho (100 đơn)');
   await expect(explanation).toContainText('chỉ còn 1 phương án');
   await expect(explanation).toContainText('Chưa có phương án giảm giá hiệu lực để so sánh');
+  await page.getByRole('tab', { name: /Nhờ AI/ }).click();
   await page.getByRole('button', { name: 'Đề xuất bằng AI', exact: true }).click();
   const notice = page.getByTestId('ai-failure-notice');
   await expect(notice).toContainText('chưa có đề xuất AI mới');
@@ -73,13 +75,13 @@ test('failed AI stays clearly separate from a baseline-only simulation after rec
     'AI provider unavailable · Mã hỗ trợ: req-source',
   );
   await expect(notice).toContainText('không phải là câu trả lời của AI');
+  await page.getByRole('tab', { name: /Kết quả/ }).click();
   await expect(page.getByTestId('result-source-label')).toContainText('Mô phỏng engine');
+  await page.getByRole('tab', { name: /Nhập số liệu/ }).click();
   const evaluated = page.waitForResponse('**/api/evaluate');
   await page.getByRole('button', { name: 'Phân tích chiến lược', exact: true }).click();
   await evaluated;
-  await expect(
-    page.getByRole('button', { name: 'Phân tích chiến lược', exact: true }),
-  ).toBeEnabled();
+  await expect(page.getByRole('heading', { name: 'Bức tranh lợi nhuận của bạn' })).toBeVisible();
   await expect(notice).toBeVisible();
   await expect(
     page.getByRole('heading', { name: 'Ứng viên AI đã được engine kiểm tra' }),
@@ -99,6 +101,7 @@ test('successful AI with ineligible vouchers explains one effective baseline wit
     },
   ]);
   await openStockLimitedShop(page);
+  await page.getByRole('tab', { name: /Nhờ AI/ }).click();
   await page.getByRole('button', { name: 'Đề xuất bằng AI', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: 'Ứng viên AI đã được engine kiểm tra' }),
@@ -123,6 +126,7 @@ test('baseline ranking describes the actual objective and preserves prior AI pro
   ]);
   await openStockLimitedShop(page);
   const button = page.getByRole('button', { name: 'Đề xuất bằng AI', exact: true });
+  await page.getByRole('tab', { name: /Nhờ AI/ }).click();
   await button.click();
   await expect(
     page.getByRole('heading', { name: 'Ứng viên AI đã được engine kiểm tra' }),
@@ -141,8 +145,10 @@ test('baseline ranking describes the actual objective and preserves prior AI pro
   await page.route('**/api/recommend', (route) =>
     route.fulfill({ status: 502, json: { status: 502, detail: 'Fixture failure' } }),
   );
+  await page.getByRole('tab', { name: /Nhờ AI/ }).click();
   await button.click();
   await expect(page.getByTestId('ai-failure-notice')).toContainText('từ lần thành công trước');
+  await page.getByRole('tab', { name: /Kết quả/ }).click();
   await expect(page.getByTestId('result-source-label')).toContainText('AI tạo ứng viên');
   await expect(page.getByRole('radio')).toHaveCount(result.strategies.length);
 });

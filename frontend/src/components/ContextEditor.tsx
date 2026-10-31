@@ -51,6 +51,23 @@ export function ContextEditor({
       </p>
       <details className="advanced">
         <summary>Reference lịch sử nước ngoài · tùy chọn</summary>
+        <p className="hint">
+          Dùng dữ liệu tổng hợp để tham khảo cách thiết kế voucher. AI không học lại CVR từ dữ liệu
+          này; các giả định của shop vẫn do bạn đặt.
+        </p>
+        <button
+          type="button"
+          className="secondary"
+          disabled={importDisabled}
+          onClick={() =>
+            onChange({
+              ...context,
+              reference_query: 'source:uci voucher geometry cap minimum',
+            })
+          }
+        >
+          Tham khảo cơ chế % + trần + đơn tối thiểu
+        </button>
         <label htmlFor="reference-query">
           Tìm reference cho AI
           <input

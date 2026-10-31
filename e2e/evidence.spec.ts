@@ -10,12 +10,18 @@ test('Reference preview works without AI credentials and clears stale results wh
     if (request.url().endsWith('/api/recommend')) aiCalls++;
   });
   await page.goto('/');
+  await page.getByRole('tab', { name: /Kết quả/ }).click();
   await expect(page.getByRole('heading', { name: 'Bức tranh lợi nhuận của bạn' })).toBeVisible();
+  await page.getByRole('tab', { name: /Nhờ AI/ }).click();
   await expect(page.getByRole('button', { name: 'Đề xuất bằng AI', exact: false })).toBeDisabled();
   await page.getByText('Reference lịch sử nước ngoài · tùy chọn', { exact: true }).click();
   const preview = page.getByRole('button', { name: 'Xem reference · không gọi AI' });
   const query = page.getByLabel('Tìm reference cho AI');
   await expect(preview).toBeDisabled();
+  await page.getByRole('button', { name: 'Tham khảo cơ chế % + trần + đơn tối thiểu' }).click();
+  await expect(query).toHaveValue('source:uci voucher geometry cap minimum');
+  await preview.click();
+  await expect(page.getByTestId('reference-evidence')).toContainText('reference phù hợp');
   await query.fill('source:cj cat litter cat food');
   await preview.click();
   await expect(page.getByText('CAT LITTER → CAT FOOD', { exact: true })).toBeVisible();
@@ -76,7 +82,9 @@ test('AI export retains the exact reference snapshot sent to the provider', asyn
     await route.fulfill({ json: result });
   });
   await page.goto('/');
+  await page.getByRole('tab', { name: /Kết quả/ }).click();
   await expect(page.getByRole('heading', { name: 'Bức tranh lợi nhuận của bạn' })).toBeVisible();
+  await page.getByRole('tab', { name: /Nhờ AI/ }).click();
   await page.getByText('Reference lịch sử nước ngoài · tùy chọn', { exact: true }).click();
   await page.getByLabel('Tìm reference cho AI').fill('source:cj cat litter cat food');
   await page.getByRole('button', { name: 'Đề xuất bằng AI', exact: true }).click();
