@@ -309,3 +309,53 @@ test('public binding serves the shared workspace without a session or bearer tok
   ).json();
   assert.equal(spec.components?.securitySchemes, undefined);
 });
+test('per-client AI budget is enforced and usage exposes model, tokens, cost and context', async (t) => {
+  const { evaluate } = await import('../src/engine/index.ts');
+  const { summarizeContext } = await import('../src/agent/context.ts');
+  let calls = 0;
+  const { app } = await fixture(t, {
+    aiConfigured: true,
+    aiBudgetUsd: 0.5,
+    recommendImpl: async (body) => {
+      calls++;
+      return {
+        ...evaluate(body.input),
+        provider: 'openai',
+        model: 'model-snapshot',
+        context: body.context,
+        prompt_version: 'v-test',
+        provider_request_id: 'req_1',
+        usage: { input_tokens: 10, output_tokens: 5 },
+        estimated_cost_usd: 0.3,
+        provider_attempts: 2,
+        decision_context: summarizeContext(body.context),
+        rejected_candidates: 0,
+      } as never;
+    },
+  });
+  const alice = { 'x-client-id': '11111111-1111-4111-8111-111111111111' };
+  const bob = { 'x-client-id': '22222222-2222-4222-8222-222222222222' };
+  const call = (headers: Record<string, string>) =>
+    app.inject({
+      method: 'POST',
+      url: '/api/recommend',
+      headers: { 'content-type': 'application/json', ...headers },
+      payload: JSON.stringify({ input: defaults, context: { seller_notes: 'note' } }),
+    });
+  assert.equal((await call(alice)).statusCode, 200);
+  assert.equal((await call(alice)).statusCode, 200);
+  const blocked = await call(alice);
+  assert.equal(blocked.statusCode, 402);
+  assert.match(blocked.json().detail, /hạn mức/);
+  assert.equal(calls, 2);
+  assert.equal((await call(bob)).statusCode, 200);
+  const usage = (await app.inject({ url: '/api/usage', headers: alice })).json();
+  assert.equal(usage.limitUsd, 0.5);
+  assert.equal(usage.spentUsd, 0.6);
+  assert.equal(usage.remainingUsd, 0);
+  assert.equal(usage.calls.length, 2);
+  assert.equal(usage.calls[0].model, 'model-snapshot');
+  assert.equal(usage.calls[0].attempts, 2);
+  assert.equal(usage.calls[0].context.context.seller_notes, 'note');
+  assert.ok(usage.calls[0].runId);
+});

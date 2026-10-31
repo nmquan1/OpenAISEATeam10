@@ -14,6 +14,27 @@ export type Health = {
   aiConfigured: boolean;
   modelConfigured: boolean;
 };
+export type AiUsage = {
+  limitUsd: number;
+  spentUsd: number;
+  remainingUsd: number;
+  calls: {
+    id: string;
+    createdAt: string;
+    runId: string;
+    model: string;
+    requestId: string;
+    promptVersion: string;
+    inputTokens: number | null;
+    outputTokens: number | null;
+    costUsd: number | null;
+    attempts: number;
+    context: {
+      context: DecisionContext;
+      decision_context: RecommendationResult['decision_context'];
+    };
+  }[];
+};
 export type Run = {
   id: string;
   createdAt: string;

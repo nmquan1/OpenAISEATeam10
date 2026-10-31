@@ -14,6 +14,13 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('PORT m
 const dailyAiLimit = Number(process.env.AI_DAILY_CALL_LIMIT ?? 20);
 if (!Number.isInteger(dailyAiLimit) || dailyAiLimit < 1 || dailyAiLimit > 20)
   throw new Error('AI_DAILY_CALL_LIMIT must be 1..20');
+const aiBudgetUsd = Number(process.env.AI_TRIAL_BUDGET_USD ?? 10);
+if (!Number.isFinite(aiBudgetUsd) || aiBudgetUsd < 0)
+  throw new Error('AI_TRIAL_BUDGET_USD must be a non-negative number');
+if (!process.env.OPENAI_INPUT_USD_PER_MILLION || !process.env.OPENAI_OUTPUT_USD_PER_MILLION)
+  console.warn(
+    'OPENAI_*_USD_PER_MILLION unset: AI cost is unknown and the trial budget cannot be enforced',
+  );
 const storeMode = process.env.RUN_STORE ?? 'local';
 if (!['local', 'supabase'].includes(storeMode))
   throw new Error('RUN_STORE must be local or supabase');
@@ -36,6 +43,7 @@ const app = await buildApp({
   host,
   store,
   dailyAiLimit,
+  aiBudgetUsd,
   allowedHosts: (process.env.ALLOWED_HOSTS ?? 'localhost,127.0.0.1,[::1]')
     .split(',')
     .map((x) => x.trim()),

@@ -10,4 +10,5 @@ export interface RouteContext {
   aiConfigured: boolean;
   modelConfigured: boolean;
   dailyAiLimit: number;
+  aiBudgetUsd: number;
 }
