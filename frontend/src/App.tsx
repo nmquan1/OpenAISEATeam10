@@ -14,6 +14,7 @@ import { ContextEditor } from './components/ContextEditor';
 import { Results } from './components/Results';
 import { PortfolioPanel } from './components/PortfolioPanel';
 import { StrategyForm } from './components/StrategyForm';
+import { Guide } from './components/Guide';
 import type { DecisionContext, Health, Run, Strategy } from './types';
 import { getOfferedStrategies, getSelectedOffer } from './strategy-offers';
 
@@ -42,6 +43,16 @@ const steps = [
   { id: 'more', number: '', label: 'Công cụ khác' },
 ] as const;
 type StepId = (typeof steps)[number]['id'];
+
+const guideSeenKey = 'market-maker.guide-seen';
+// Storage can be disabled; then the guide simply opens on each visit.
+function guideSeen() {
+  try {
+    return localStorage.getItem(guideSeenKey) === '1';
+  } catch {
+    return false;
+  }
+}
 
 function message(error: unknown) {
   if (error instanceof api.ApiError)
@@ -76,8 +87,18 @@ export function App() {
   const runsController = useRef<AbortController | null>(null);
   const historyController = useRef<AbortController | null>(null);
   const [step, setStep] = useState<StepId>('input');
+  const [guideOpen, setGuideOpen] = useState(() => !guideSeen());
   const tabsRef = useRef<HTMLDivElement>(null);
   const result = source === 'ai' ? aiResult : evaluation;
+
+  function closeGuide() {
+    setGuideOpen(false);
+    try {
+      localStorage.setItem(guideSeenKey, '1');
+    } catch {
+      /* Without storage the guide opens again next visit; nothing else depends on it. */
+    }
+  }
 
   /** Switch step and, if the page is scrolled past the tabs, bring the new step's top into view. */
   function goTo(next: StepId) {
@@ -335,6 +356,9 @@ export function App() {
           market maker
         </a>
         <div className="actions">
+          <button className="primary" type="button" onClick={() => setGuideOpen(true)}>
+            Hướng dẫn
+          </button>
           <button className="secondary" type="button" onClick={() => fileInput.current?.click()}>
             Nhập kế hoạch JSON
           </button>
@@ -595,6 +619,14 @@ export function App() {
           <a href="/docs/research.md">Nguồn & giới hạn mô hình</a>
         </footer>
       </main>
+      <Guide
+        open={guideOpen}
+        onClose={closeGuide}
+        onStart={() => {
+          closeGuide();
+          goTo('input');
+        }}
+      />
     </>
   );
 }

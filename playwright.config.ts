@@ -10,6 +10,13 @@ export default defineConfig({
   use: {
     baseURL,
     trace: 'retain-on-failure',
+    // Most tests start as returning users; e2e/guide.spec.ts covers the first-visit guide.
+    storageState: {
+      cookies: [],
+      origins: [
+        { origin: baseURL, localStorage: [{ name: 'market-maker.guide-seen', value: '1' }] },
+      ],
+    },
     screenshot: 'only-on-failure',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
