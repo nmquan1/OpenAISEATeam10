@@ -14,6 +14,7 @@ import { ContextEditor } from './components/ContextEditor';
 import { Results } from './components/Results';
 import { StrategyForm } from './components/StrategyForm';
 import type { DecisionContext, Health, Run, Strategy } from './types';
+import { getOfferedStrategies, getSelectedOffer } from './strategy-offers';
 
 function initialDraft(): Draft & { notice: string } {
   try {
@@ -121,10 +122,10 @@ export function App() {
         .then((data) => {
           if (controller.signal.aborted) return;
           setEvaluation(data);
-          setSelectedId(data.recommended.id);
+          setSelectedId(getSelectedOffer(data, null).id);
           setError('');
           setStatus(
-            `Đã tính ${data.strategies.length} phương án. Kết quả là mô phỏng theo giả định.`,
+            `Đã tính ${data.strategies.length} phương án; hiển thị ${getOfferedStrategies(data).length} phương án đứng đầu. Kết quả là mô phỏng theo giả định.`,
           );
         })
         .catch((reason) => {
@@ -197,8 +198,10 @@ export function App() {
       if (!controller.signal.aborted) {
         setAiResult(data);
         setSource('ai');
-        setSelectedId(data.recommended.id);
-        setStatus(`Đã kiểm tra ${data.strategies.length} phương án, gồm baseline và ứng viên AI.`);
+        setSelectedId(getSelectedOffer(data, null).id);
+        setStatus(
+          `Đã kiểm tra ${data.strategies.length} phương án, gồm baseline và ứng viên AI; hiển thị ${getOfferedStrategies(data).length} phương án đứng đầu.`,
+        );
       }
     } catch (reason) {
       if (!controller.signal.aborted) {
@@ -399,7 +402,7 @@ export function App() {
                     setSelectedId(null);
                   }}
                 >
-                  Ba phương án cơ sở
+                  Phương án cơ sở
                 </button>
                 <button
                   type="button"
@@ -421,9 +424,7 @@ export function App() {
                 onApply={apply}
                 context={context}
                 onExport={() => {
-                  const selection =
-                    result.strategies.find((strategy) => strategy.id === selectedId) ??
-                    result.recommended;
+                  const selection = getSelectedOffer(result, selectedId);
                   exportPlan(
                     result,
                     selection,

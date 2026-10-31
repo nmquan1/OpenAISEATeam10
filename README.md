@@ -88,6 +88,8 @@ docs/                       Contracts, deployment, research and pitching source
 - AI trả candidate; engine bổ sung baseline/measured/current, tính lại rồi xếp hạng theo mục tiêu.
 - Mọi kết quả ghi `scenario_only`, phiên bản schema/engine và snapshot input; OpenAI bổ sung prompt/model/usage/context metadata.
 - Export ghi **phương án đang chọn**, bao gồm kết quả và context AI nếu đang xem AI.
+- Giao diện chỉ offer **tối đa top 5 chiến lược** theo thứ hạng engine; kết quả đầy đủ vẫn giữ trong lịch sử và export để truy lại phép so sánh.
+- Chọn từng chiến lược để mở dashboard doanh thu, lợi nhuận, đơn hàng, ngân sách/quota; đổi kịch bản thấp/cơ sở/cao hoặc bấm cột biểu đồ để xem số liệu. Doanh thu đã trừ phần ưu đãi shop tài trợ và điều chỉnh hoàn hàng, trước phí và chi phí vận hành.
 
 Xem [data contract](docs/data-contract.md) và [API docs](docs/api.md). CSV template chỉ có header; không giả dữ liệu bán hàng thật.
 

@@ -53,7 +53,8 @@ The first user should be able to enter a basket, adjust costs and assumptions, c
 6. Choose objective: cautious profit, balanced profit, or revenue growth.
 7. Compare no-voucher, moderated voucher and current voucher across scenarios.
 8. Optionally add seller notes and historical campaign aggregates, then request AI candidates.
-9. Inspect the selected candidate, apply it to the form, export the plan or revisit saved runs.
+9. Inspect up to five top-ranked strategies. Select a strategy to open its interactive revenue/profit/orders dashboard, change low/base/high scenarios, and inspect voucher budget and quota usage.
+10. Apply the selected voucher to the form, export the plan or revisit saved runs. The complete engine result remains in the export for provenance, including the no-voucher baseline even when it is outside the displayed top five.
 
 ## 6. What the MVP models
 

@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { getOfferedStrategies, getSelectedOffer } from '../strategy-offers';
+import { StrategyDashboard } from './StrategyDashboard';
 import type { EvaluationResult, RecommendationResult, Voucher } from '@market-maker/contracts';
 import {
   count,
@@ -30,11 +32,10 @@ export function Results({
   context: DecisionContext;
 }) {
   const [scenario, setScenario] = useState<ScenarioKey>('base');
-  const selected =
-    result.strategies.find((strategy) => strategy.id === selectedId) ?? result.recommended;
+  const offeredStrategies = getOfferedStrategies(result);
+  const selected = getSelectedOffer(result, selectedId);
   const row = selected.scenarios.find((item) => item.key === scenario)!;
   const baseline = result.strategies.find((strategy) => strategy.discount_dong === 0);
-  const baselineProfit = baseline?.scenarios.find((item) => item.key === scenario)?.profit_dong;
   const ai = 'provider' in result;
   const contextUsed = ai ? result.context : context;
   return (
@@ -48,6 +49,74 @@ export function Results({
         </div>
         <span className="pill">Mô phỏng theo giả định</span>
       </div>
+      <article className="card">
+        <div className="section-heading">
+          <h3>Top {offeredStrategies.length} chiến lược</h3>
+          <span className="pill">Kịch bản {scenarioLabels[scenario].toLowerCase()}</span>
+        </div>
+        <p className="hint">
+          Tối đa 5 chiến lược theo mục tiêu đã chọn. Chọn một hàng để mở dashboard và xuất phương
+          án; thứ hạng giữ nguyên khi xem các kịch bản traffic.
+        </p>
+        <div
+          className="table-scroll"
+          tabIndex={0}
+          role="region"
+          aria-label="Bảng so sánh chiến lược, cuộn ngang nếu cần"
+        >
+          <table>
+            <caption className="sr-only">
+              Chiến lược tại traffic {scenarioLabels[scenario].toLowerCase()}
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Chọn chiến lược</th>
+                <th scope="col">Giảm / giỏ</th>
+                <th scope="col">Đơn</th>
+                <th scope="col">Doanh thu</th>
+                <th scope="col">Chi shop</th>
+                <th scope="col">Lợi nhuận</th>
+              </tr>
+            </thead>
+            <tbody>
+              {offeredStrategies.map((strategy, index) => {
+                const item = strategy.scenarios.find((value) => value.key === scenario)!;
+                return (
+                  <tr
+                    key={strategy.id}
+                    className={selected.id === strategy.id ? 'selected-row' : undefined}
+                  >
+                    <th scope="row">
+                      <label className="radio-label">
+                        <input
+                          type="radio"
+                          name="selected-strategy"
+                          value={strategy.id}
+                          checked={selected.id === strategy.id}
+                          onChange={() => onSelect(strategy.id)}
+                        />
+                        <span>
+                          <span className="strategy-rank">#{index + 1}</span> {strategy.name}
+                          {strategy.id === result.recommended.id && (
+                            <small>Đề xuất theo tiêu chí</small>
+                          )}
+                        </span>
+                      </label>
+                    </th>
+                    <td>{money(strategy.discount_dong)}</td>
+                    <td>{count(item.orders)}</td>
+                    <td>{money(item.revenue_dong)}</td>
+                    <td>{money(item.spend_dong)}</td>
+                    <td className={item.profit_dong < 0 ? 'negative' : 'positive'}>
+                      {money(item.profit_dong)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </article>
       <article className="card recommendation">
         <p className="eyebrow">
           {selected.id === result.recommended.id
@@ -61,32 +130,13 @@ export function Results({
           {selected.voucher.seller_funding_bps / 100}% · giảm thực tế{' '}
           {money(selected.discount_dong)} / giỏ đủ điều kiện.
         </p>
-        <div className="metrics">
-          <div>
-            <span>Lợi nhuận · {scenarioLabels[scenario].toLowerCase()}</span>
-            <strong className={row.profit_dong < 0 ? 'negative' : 'positive'}>
-              {money(row.profit_dong)}
-            </strong>
-          </div>
-          <div>
-            <span>Đơn hàng</span>
-            <strong>{count(row.orders)}</strong>
-          </div>
-          <div>
-            <span>Shop chi voucher</span>
-            <strong>{money(row.spend_dong)}</strong>
-          </div>
-        </div>
-        {baselineProfit !== undefined && (
-          <p className="difference">
-            So với không voucher:{' '}
-            <strong>
-              {row.profit_dong - baselineProfit >= 0 ? '+' : ''}
-              {money(row.profit_dong - baselineProfit)}
-            </strong>{' '}
-            lợi nhuận trong cùng kịch bản.
-          </p>
-        )}
+        <StrategyDashboard
+          strategy={selected}
+          scenario={scenario}
+          onScenarioChange={setScenario}
+          baseline={baseline}
+          constraints={result.input.constraints}
+        />
         {row.profit_dong < 0 && (
           <p className="notice error">
             Phương án đang lỗ ở kịch bản này. Kiểm tra giá vốn, phí và voucher trước khi triển khai.
@@ -117,83 +167,6 @@ export function Results({
           Bản xuất gồm phương án đang chọn, các kết quả so sánh, đầu vào và bối cảnh. Áp dụng chỉ
           đổi thiết lập của app; không gửi lên Shopee.
         </p>
-      </article>
-      <article className="card">
-        <div className="section-heading">
-          <h3>So sánh trên cùng kịch bản</h3>
-          <div className="toggle" role="group" aria-label="Kịch bản traffic">
-            {(['low', 'base', 'high'] as const).map((key) => (
-              <button
-                key={key}
-                type="button"
-                aria-pressed={scenario === key}
-                onClick={() => setScenario(key)}
-              >
-                {scenarioLabels[key]}
-              </button>
-            ))}
-          </div>
-        </div>
-        <p className="hint">
-          Chọn một hàng để xem và xuất phương án. Ba kịch bản không có xác suất; cơ sở không phải kỳ
-          vọng thống kê.
-        </p>
-        <div
-          className="table-scroll"
-          tabIndex={0}
-          role="region"
-          aria-label="Bảng so sánh chiến lược, cuộn ngang nếu cần"
-        >
-          <table>
-            <caption className="sr-only">
-              Chiến lược tại traffic {scenarioLabels[scenario].toLowerCase()}
-            </caption>
-            <thead>
-              <tr>
-                <th scope="col">Chọn chiến lược</th>
-                <th scope="col">Giảm / giỏ</th>
-                <th scope="col">Đơn</th>
-                <th scope="col">Chi shop</th>
-                <th scope="col">Lợi nhuận</th>
-              </tr>
-            </thead>
-            <tbody>
-              {result.strategies.map((strategy) => {
-                const item = strategy.scenarios.find((value) => value.key === scenario)!;
-                return (
-                  <tr
-                    key={strategy.id}
-                    className={selected.id === strategy.id ? 'selected-row' : undefined}
-                  >
-                    <th scope="row">
-                      <label className="radio-label">
-                        <input
-                          type="radio"
-                          name="selected-strategy"
-                          value={strategy.id}
-                          checked={selected.id === strategy.id}
-                          onChange={() => onSelect(strategy.id)}
-                        />
-                        <span>
-                          {strategy.name}
-                          {strategy.id === result.recommended.id && (
-                            <small>Đề xuất theo tiêu chí</small>
-                          )}
-                        </span>
-                      </label>
-                    </th>
-                    <td>{money(strategy.discount_dong)}</td>
-                    <td>{count(item.orders)}</td>
-                    <td>{money(item.spend_dong)}</td>
-                    <td className={item.profit_dong < 0 ? 'negative' : 'positive'}>
-                      {money(item.profit_dong)}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
       </article>
       <article className="card decision-context">
         <h3>Quyết định này dựa trên điều gì?</h3>
