@@ -39,5 +39,6 @@ export async function recommend(body,{env=process.env,fetchImpl=fetch}={}){
   if (!proposal || Object.keys(proposal).join() !== 'candidates') throw new Error('Invalid AI response');
   candidates=rankCandidates(input,proposal.candidates);
  } catch {throw new HttpError(502,'AI không trả candidate hợp lệ.');}
- return {provider:'openai',model,candidates,recommended:candidates[0],limitations:['Tốt nhất trong tập ứng viên và giả định đã nhập; không phải tối ưu toàn thị trường.','Uplift CVR giống nhau giữa các voucher đang có hiệu lực; chưa học elasticity hay hiệu ứng cách diễn đạt từ lịch sử.','Context được dùng để đề xuất voucher, không tự biến thành forecast. Chưa có roundtable nhiều lượt/model.','Một SKU/đơn; phí tổng hợp và traffic do người dùng nhập. Không tự áp dụng voucher lên Shopee.']};
+ const {fees,portfolio}=evaluate({...input,...candidates[0].voucher});
+ return {provider:'openai',model,candidates,recommended:candidates[0],fees,portfolio,limitations:['Tốt nhất trong tập ứng viên và giả định đã nhập; không phải tối ưu toàn thị trường.','Uplift CVR giống nhau giữa các voucher đang có hiệu lực; chưa học elasticity hay hiệu ứng cách diễn đạt từ lịch sử.','Context được dùng để đề xuất voucher, không tự biến thành forecast. Chưa có roundtable nhiều lượt/model.','Một SKU/đơn; phí tổng hợp và traffic do người dùng nhập. Không tự áp dụng voucher lên Shopee.']};
 }

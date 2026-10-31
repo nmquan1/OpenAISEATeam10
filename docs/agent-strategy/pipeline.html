@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Margin Guard Pipeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#0C1214; --panel:#121B1E; --line:#22343A; --ink:#E4EEF0; --muted:#7E9399;
+  --research:#47C6FF; --strategy:#B794FF; --catalog:#F2B33D; --drop:#FF7A93; --out:#5BE39A;
+  --font-display:'Barlow Semi Condensed','Arial Narrow',Arial,sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-mono)}
+.app{min-height:100%;display:flex;flex-direction:column;gap:12px;padding:16px max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px))}
+h1{font-family:var(--font-display);font-weight:600;font-size:clamp(1.4rem,3vw,2rem);margin:0;letter-spacing:.01em}
+.stage{flex:1;border:1px solid var(--line);border-radius:14px;background:var(--panel);overflow-x:auto;display:flex;align-items:center}
+svg{display:block;width:100%;min-width:960px;height:auto}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:.78rem;color:var(--muted)}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
+
+text{fill:var(--ink)}
+.t{font:600 17px var(--font-display);letter-spacing:.02em;text-anchor:middle}
+.s{font:400 10.5px var(--font-mono);fill:var(--muted);text-anchor:middle}
+.zl{font:600 13px var(--font-mono);letter-spacing:.14em;text-transform:uppercase}
+.zs{font:400 10.5px var(--font-mono);fill:var(--muted)}
+.tag{font:400 10px var(--font-mono);fill:var(--muted)}
+.zone{fill:none;stroke-width:1.2;stroke-dasharray:6 6;opacity:.55}
+.n{fill:var(--bg);stroke:var(--line);stroke-width:1.5}
+.r .n{stroke:var(--research)} .c .n{stroke:var(--catalog)} .m .n{stroke:var(--strategy)} .o .n{stroke:var(--out)} .x .n{stroke:var(--drop);stroke-dasharray:4 4}
+.p{fill:none;stroke:var(--line);stroke-width:2}
+.px{stroke:var(--drop);stroke-dasharray:3 5;opacity:.6}
+.node{cursor:pointer}
+.node:hover .n,.node:focus-visible .n{fill:var(--panel);stroke-width:2.5}
+.node:focus{outline:none}
+.node.on .n{fill:var(--panel);stroke-width:3}
+.back{position:fixed;inset:0;background:rgba(5,9,10,.55);backdrop-filter:blur(2px);opacity:0;transition:opacity .25s;z-index:5}
+.back.show{opacity:1}
+.card{position:fixed;z-index:6;left:50%;top:50%;width:min(860px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;background:var(--panel);border:1.5px solid var(--c,var(--line));border-radius:16px;padding:20px 22px 22px;box-shadow:0 0 0 1px rgba(0,0,0,.4),0 0 40px -8px var(--c,transparent);transform-origin:top left}
+.card .top{display:flex;align-items:flex-start;gap:12px}
+.card .kind{font-size:.72rem;text-transform:uppercase;letter-spacing:.12em;color:var(--c)}
+.card h2{font:600 1.7rem var(--font-display);margin:2px 0 0}
+.x-btn{margin-left:auto;font:500 1rem var(--font-mono);width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+.x-btn:hover{border-color:var(--c)}
+.flow{display:grid;grid-template-columns:minmax(0,.8fr) 96px minmax(0,1.4fr);gap:0;align-items:stretch;margin-top:16px}
+.flow pre{margin:0;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;overflow-x:auto;font:11.5px/1.55 var(--font-mono);color:var(--ink);height:100%;white-space:pre-wrap;overflow-wrap:anywhere}
+.flow .lbl{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px}
+.flow .col{min-width:0;display:flex;flex-direction:column}
+.flow .col pre{flex:1}
+.pipe{position:relative;display:flex;align-items:center;justify-content:center}
+.pipe::before{content:"";position:absolute;left:8px;right:8px;top:50%;height:2px;background:var(--line)}
+.pipe .core{position:relative;width:46px;height:46px;border-radius:50%;border:2px solid var(--c);background:var(--bg);display:grid;place-items:center;font:600 .8rem var(--font-display);color:var(--c);animation:spin 2.4s linear infinite}
+.pipe .core::after{content:"";position:absolute;inset:-7px;border-radius:50%;border:1px dashed var(--c);opacity:.5}
+.pipe i{position:absolute;top:calc(50% - 4px);left:8px;width:8px;height:8px;border-radius:50%;background:var(--c);box-shadow:0 0 10px var(--c);animation:pass 1.6s linear infinite}
+.pipe i:nth-of-type(2){animation-delay:.53s}.pipe i:nth-of-type(3){animation-delay:1.06s}
+@keyframes pass{0%{left:8px;opacity:0}10%{opacity:1}90%{opacity:1}100%{left:calc(100% - 16px);opacity:0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.steps{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:8px;counter-reset:s}
+.steps li{counter-increment:s;display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start;font-size:.84rem;line-height:1.5;color:var(--muted);opacity:0;transform:translateX(-10px);transition:opacity .35s,transform .35s}
+.steps li::before{content:counter(s);display:grid;place-items:center;width:24px;height:24px;border-radius:7px;border:1px solid var(--c);color:var(--c);font:600 .8rem var(--font-display)}
+.steps li.in{opacity:1;transform:none}
+.steps li.run::before{background:var(--c);color:var(--bg)}
+.steps b{color:var(--ink);font-weight:500}
+.reveal{opacity:0;transition:opacity .35s .1s}
+.card.open .reveal{opacity:1}
+@media (max-width:700px){.flow{grid-template-columns:1fr}.pipe{height:70px}.pipe::before{left:50%;right:auto;top:8px;bottom:8px;width:2px;height:auto}.pipe i{left:calc(50% - 4px);animation-name:passv}}
+@keyframes passv{0%{top:8px;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:calc(100% - 16px);opacity:0}}
+@media (prefers-reduced-motion:reduce){.pipe i,.pipe .core{animation:none}.steps li{transition:none}}
+@media (prefers-reduced-motion:reduce){.pk{display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>Margin Guard Pipeline</h1>
+  <div class="stage">
+  <svg viewBox="0 0 1120 560" role="img" aria-label="Research engine ghi vào catalog, strategy engine đọc catalog và input merchant để ra đề xuất">
+    <defs>
+      <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+
+    <!-- zones -->
+    <rect class="zone" x="14" y="16" width="1092" height="236" rx="12" style="stroke:var(--research)"/>
+    <text class="zl" x="34" y="42" style="fill:var(--research)">Research engine</text>
+    <text class="zs" x="34" y="60">cron 06:00 hằng ngày · OpenAI web_search · ghi vào catalog</text>
+
+    <rect class="zone" x="14" y="350" width="1092" height="194" rx="12" style="stroke:var(--strategy)"/>
+    <text class="zl" x="34" y="376" style="fill:var(--strategy)">Strategy engine</text>
+    <text class="zs" x="34" y="394">khi merchant bấm · không search · chỉ đọc catalog</text>
+
+    <!-- paths -->
+    <path id="a1" class="p" d="M178 135 H218"/>
+    <path id="a2" class="p" d="M378 135 H418"/>
+    <path id="a3" class="p" d="M578 135 H618"/>
+    <path id="a4" class="p" d="M778 135 H818"/>
+    <path id="a5" class="p" d="M898 170 V266"/>
+    <path id="ax" class="p px" d="M698 170 V200"/>
+    <path id="b1" class="p" d="M178 455 H290"/>
+    <path id="c1" class="p" d="M898 334 V398 Q898 410 886 410 H566 Q554 410 554 418"/>
+    <path id="b2" class="p" d="M806 455 H912"/>
+
+    <text class="tag" x="908" y="222">publish vN</text>
+    <text class="tag" x="710" y="186" style="fill:var(--drop)">404 · quote lệch</text>
+    <text class="tag" x="610" y="402">đọc fees@vN</text>
+
+    <!-- research -->
+    <g class="r node" tabindex="0" role="button" data-k="web"><rect class="n" x="32" y="100" width="146" height="70" rx="10"/><text class="t" x="105" y="128">Web</text><text class="s" x="105" y="150">banhang.shopee.vn</text></g>
+    <g class="r node" tabindex="0" role="button" data-k="search"><rect class="n" x="230" y="100" width="148" height="70" rx="10"/><text class="t" x="304" y="128">Search</text><text class="s" x="304" y="150">gpt-5 · web_search</text></g>
+    <g class="r node" tabindex="0" role="button" data-k="extract"><rect class="n" x="430" y="100" width="148" height="70" rx="10"/><text class="t" x="504" y="128">Extract</text><text class="s" x="504" y="150">value · url · quote</text></g>
+    <g class="r node" tabindex="0" role="button" data-k="verify"><rect class="n" x="630" y="100" width="148" height="70" rx="10"/><text class="t" x="704" y="128">Verify</text><text class="s" x="704" y="150">playwright · allowlist</text></g>
+    <g class="r node" tabindex="0" role="button" data-k="approve"><rect class="n" x="830" y="100" width="148" height="70" rx="10"/><text class="t" x="904" y="128">Diff · Approve</text><text class="s" x="904" y="150">người duyệt</text></g>
+    <g class="x node" tabindex="0" role="button" data-k="drop"><rect class="n" x="648" y="200" width="100" height="34" rx="8"/><text class="s" x="698" y="218" style="fill:var(--drop);dominant-baseline:middle">bị loại</text></g>
+
+    <!-- catalog -->
+    <g class="c node" tabindex="0" role="button" data-k="catalog"><rect class="n" x="808" y="266" width="180" height="68" rx="34"/><text class="t" x="898" y="294" style="fill:var(--catalog)">Catalog</text><text class="s" x="898" y="316">fees@2026-10-31</text></g>
+
+    <!-- strategy -->
+    <g class="m node" tabindex="0" role="button" data-k="merchant"><rect class="n" x="32" y="420" width="146" height="70" rx="10"/><text class="t" x="105" y="448">Merchant</text><text class="s" x="105" y="470">khách · voucher · SKU</text></g>
+    <g class="m node" tabindex="0" role="button" data-k="engine"><rect class="n" x="290" y="418" width="516" height="74" rx="10"/><text class="t" x="548" y="442">Strategy Engine</text><text class="s" x="548" y="464">enrich → margin guard → score → allocate + matrix</text><text class="s" x="548" y="480">→ worst-stack check · xtra vs đồng tài trợ</text></g>
+    <g class="o node" tabindex="0" role="button" data-k="output"><rect class="n" x="912" y="420" width="176" height="70" rx="10"/><text class="t" x="1000" y="448">Đề xuất</text><text class="s" x="1000" y="470">voucher · số lượng · matrix</text></g>
+
+    <!-- packets -->
+    <g class="pk" filter="url(#glow)">
+      <circle r="4.5" fill="var(--research)"><animateMotion dur="1.3s" repeatCount="indefinite"><mpath href="#a1"/></animateMotion></circle>
+      <circle r="4.5" fill="var(--research)"><animateMotion dur="1.3s" begin=".33s" repeatCount="indefinite"><mpath href="#a2"/></animateMotion></circle>
+      <circle r="4.5" fill="var(--research)"><animateMotion dur="1.3s" begin=".66s" repeatCount="indefinite"><mpath href="#a3"/></animateMotion></circle>
+      <circle r="4.5" fill="var(--research)"><animateMotion dur="1.3s" begin="1s" repeatCount="indefinite"><mpath href="#a4"/></animateMotion></circle>
+      <circle r="4" fill="var(--drop)"><animateMotion dur="1.4s" begin=".8s" repeatCount="indefinite"><mpath href="#ax"/></animateMotion></circle>
+      <circle r="5.5" fill="var(--catalog)"><animateMotion dur="1.8s" begin="1.3s" repeatCount="indefinite"><mpath href="#a5"/></animateMotion></circle>
+      <circle r="5.5" fill="var(--catalog)"><animateMotion dur="2.4s" repeatCount="indefinite"><mpath href="#c1"/></animateMotion></circle>
+      <circle r="5.5" fill="var(--strategy)"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#b1"/></animateMotion></circle>
+      <circle r="5.5" fill="var(--out)"><animateMotion dur="1.5s" begin=".75s" repeatCount="indefinite"><mpath href="#b2"/></animateMotion></circle>
+    </g>
+  </svg>
+  </div>
+  <div class="legend">
+    <span><i style="background:var(--research)"></i>Research · hằng ngày</span>
+    <span><i style="background:var(--catalog)"></i>Catalog có version</span>
+    <span><i style="background:var(--strategy)"></i>Input merchant</span>
+    <span><i style="background:var(--out)"></i>Đề xuất trả về</span>
+    <span><i style="background:var(--drop)"></i>Bị loại khi kiểm nguồn</span>
+    <span>Bấm vào một khối để xem nó xử lý gì</span>
+  </div>
+  <div class="back" id="back" hidden></div>
+  <div class="card" id="card" role="dialog" aria-modal="true" aria-labelledby="title" hidden>
+    <div class="top"><div><div class="kind" id="kind"></div><h2 id="title"></h2></div><button class="x-btn" id="close" type="button" aria-label="Đóng">✕</button></div>
+    <div class="flow reveal">
+      <div class="col"><div class="lbl">Vào</div><pre id="in"></pre></div>
+      <div class="pipe" aria-hidden="true"><i></i><i></i><i></i><div class="core">⚙</div></div>
+      <div class="col"><div class="lbl">Ra</div><pre id="out"></pre></div>
+    </div>
+    <ol class="steps" id="steps"></ol>
+  </div>
+</div>
+<script>
+const COL={r:'var(--research)',c:'var(--catalog)',m:'var(--strategy)',o:'var(--out)',x:'var(--drop)'};
+const N={
+web:{z:'r',k:'Research engine',t:'Web',s:[
+ '<b>Danh sách nguồn được phép:</b> banhang.shopee.vn/edu, help.shopee.vn, văn bản pháp luật',
+ '<b>Bộ query cố định</b> chạy mỗi ngày: phí cố định, phí xử lý giao dịch, Voucher Xtra, Đồng Tài Trợ, thuế HKD, chiến lược mega-sale',
+ 'Blog (MISA, Sapo, BigSeller) chỉ dùng để tìm ra bài gốc, không lấy số'],
+ i:`cron 06:00 Asia/Ho_Chi_Minh`,
+ o:`queries = [
+  "Shopee phí cố định người bán không Mall",
+  "Gói Voucher Xtra phí dịch vụ",
+  "Chính sách Đồng Tài Trợ Mã ưu đãi",
+  "Shopee khấu trừ thuế hộ kinh doanh",
+  ...
+]`},
+search:{z:'r',k:'Research engine',t:'Search',s:[
+ 'Gọi OpenAI Responses API với tool <b>web_search</b>, key <b>OPENAI_API_KEY_TEAM10_HACKATHON</b>',
+ 'Mỗi query trả về câu trả lời và danh sách URL trích dẫn',
+ 'Chưa tin kết quả: URL có thể là file CDN hoặc blog cũ'],
+ i:`POST /v1/responses
+{ "model": "gpt-5",
+  "tools": [{"type":"web_search"}],
+  "input": "Phí dịch vụ Gói Voucher Xtra hiện tại?" }`,
+ o:`"5,5% giá trị mỗi sản phẩm, tối đa 50.000đ"
+cite: mms.file.susercontent.com/...   ⚠ ngoài allowlist`},
+extract:{z:'r',k:'Research engine',t:'Extract',s:[
+ 'Structured output ép mỗi con số thành <b>một bản ghi</b> theo schema',
+ 'Bắt buộc có: field, value, ngày hiệu lực, source_url, quote nguyên văn',
+ 'Thiếu quote thì không tạo bản ghi'],
+ i:`câu trả lời + trích dẫn từ Search`,
+ o:`{ "field": "voucher_xtra.fee_bps",
+  "value": 550, "cap_dong": 50000,
+  "effective_from": "2026-05-23",
+  "source_url": "https://banhang.shopee.vn/edu/article/18182",
+  "quote": "5.5% giá trị mỗi sản phẩm (tối đa 50.000Đ/sản phẩm)" }`},
+verify:{z:'r',k:'Research engine',t:'Verify',s:[
+ '<b>Kiểm bằng code</b>, không để LLM tự kiểm chính nó',
+ 'URL phải thuộc allowlist',
+ 'Mở lại trang bằng <b>Playwright</b> (trang Shopee render bằng JS)',
+ 'Câu quote phải có nguyên văn trên trang, con số phải nằm trong quote',
+ 'Rớt bất kỳ điều kiện nào → bị loại'],
+ i:`bản ghi từ Extract`,
+ o:`domain_ok  ✅  banhang.shopee.vn
+render     ✅  200
+quote_ok   ✅  có nguyên văn
+number_ok  ✅  "5.5%" nằm trong quote
+→ PASS`},
+drop:{z:'x',k:'Research engine',t:'Bị loại',s:[
+ 'Ghi log kèm lý do, không đưa vào catalog',
+ 'Người duyệt xem lại khi cần'],
+ i:`bản ghi rớt Verify`,
+ o:`article/27451  → 404
+article/2310   → 404
+misaeshop.vn   → ngoài allowlist (Voucher Xtra 2%)
+shopplus.vn    → không có URL cụ thể`},
+approve:{z:'r',k:'Research engine',t:'Diff · Approve',s:[
+ 'So các bản ghi PASS với catalog đang dùng',
+ 'Không có thay đổi → <b>không publish</b>, strategy engine không phải chạy lại',
+ 'Có thay đổi → tạo bản candidate, người duyệt bấm OK',
+ 'Duyệt xong → publish version mới'],
+ i:`bản ghi PASS + catalog hiện tại`,
+ o:`diff fees@2026-05-22 → fees@2026-05-23
+  voucher_xtra.fee_bps     400  → 550
+  cofund.seller_share_bps  3000 → 4000
+  commission.beauty_bps    1400 → 1700
+[ Duyệt ]  [ Bỏ qua ]`},
+catalog:{z:'c',k:'Điểm bàn giao',t:'Catalog',s:[
+ 'Nơi <b>duy nhất</b> strategy engine đọc dữ liệu',
+ 'Có version: cùng input + cùng version → luôn ra cùng kết quả',
+ 'Bản v1 lấy từ VERIFIED-DATA.md'],
+ i:`publish từ Diff · Approve`,
+ o:`fees@2026-10-31 (Shopee, non-Mall)
+  commission_bps        theo ngành (Thời trang 1350–1650)
+  txn_fee_bps           600  / đơn
+  infra_fee_dong        3000 / đơn
+  tax_bps               150  (1% GTGT + 0,5% TNCN)
+  voucher_xtra.fee_bps  550, cap 50000 / SP
+  cofund.seller_bps     4000, cap 50000 / SP
+  xtra_excludes_cofund  true
+strategies@2026-10-31
+  AOV-01 tier %, AOV-02 freeship, ACQ-01 welcome, …`},
+merchant:{z:'m',k:'Strategy engine',t:'Merchant',s:[
+ 'Nhập 3 trường: số khách dự kiến, số voucher, danh sách sản phẩm',
+ '<b>cost</b> có thể bỏ trống → engine suy ra theo ngành, gắn cờ inferred',
+ 'Có thể override: floor, mục tiêu, ngành'],
+ i:`form trên giao diện`,
+ o:`{ "est_customers": 3000,
+  "num_vouchers": 600,
+  "products": [
+    {"name":"Áo thun basic","price":199000,"cost":99000},
+    {"name":"Quần jean","price":499000,"cost":275000},
+    {"name":"Tất cổ ngắn","price":49000} ] }`},
+engine:{z:'m',k:'Strategy engine',t:'Strategy Engine',s:[
+ '<b>Enrich:</b> suy ra ngành, AOV; lấy phí theo ngành từ catalog',
+ '<b>Margin guard:</b> mức giảm tối đa mỗi SP còn giữ floor; d_max &lt; 10% → loại khỏi voucher %',
+ '<b>Score:</b> lọc strategy theo mục tiêu, chấm 4 tiêu chí',
+ '<b>Allocate + matrix:</b> chia số voucher, điền luật cộng dồn',
+ '<b>Worst-stack check:</b> giỏ xấu nhất của mỗi tổ hợp, ô dưới floor → đổi thành Không',
+ '<b>Xtra vs Đồng Tài Trợ:</b> hai cơ chế loại trừ nhau, chọn cái có net cao hơn'],
+ i:`input merchant + fees@2026-10-31`,
+ o:`fee% (Thời trang) = 15 + 6 + 1,5 = 22,5%  (+3.000đ/đơn)
+d_max = 1 − cost / (price × (1 − fee% − floor%))
+  Áo thun 199k    ≈ 13,5%  ✅
+  Quần jean 499k  ≈ 4,2%   ❌ loại khỏi voucher %
+  Tất 49k         inferred ❌ chỉ làm quà`},
+output:{z:'o',k:'Strategy engine',t:'Đề xuất',s:[
+ 'Danh sách voucher kèm số lượng',
+ 'Ma trận cộng dồn voucher',
+ 'Chương trình nên dùng: Voucher Xtra hay Đồng Tài Trợ',
+ 'Cảnh báo SP bị loại, mọi số trỏ về version catalog',
+ 'Số dưới đây là ví dụ minh họa, chưa chạy thật'],
+ i:`kết quả Strategy Engine`,
+ o:`{ "catalog_version": "fees@2026-10-31",
+  "programme": "cofund",
+  "vouchers": [
+    {"code":"FREESHIP399","qty":300},
+    {"code":"TIER599-8","qty":180},
+    {"code":"GWP599","qty":120} ],
+  "excluded_from_pct": ["Quần jean","Tất cổ ngắn"] }`}
+};
+const nodes=[...document.querySelectorAll('.node')];
+const card=document.getElementById('card'),back=document.getElementById('back');
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let timers=[],from=null;
+function clearT(){timers.forEach(clearTimeout);timers=[]}
+function show(g){
+  const k=g.dataset.k,n=N[k];clearT();from=g;
+  nodes.forEach(x=>x.classList.toggle('on',x===g));
+  card.style.setProperty('--c',COL[n.z]);
+  document.getElementById('kind').textContent=n.k;
+  document.getElementById('title').textContent=n.t;
+  document.getElementById('in').textContent=n.i;
+  document.getElementById('out').textContent=n.o;
+  const ol=document.getElementById('steps');
+  ol.innerHTML=n.s.map(x=>'<li><span>'+x+'</span></li>').join('');
+  back.hidden=false;card.hidden=false;card.classList.remove('open');
+  requestAnimationFrame(()=>back.classList.add('show'));
+  card.getAnimations().forEach(a=>a.cancel());card.style.transform='none';
+  const r=g.getBoundingClientRect(),c=card.getBoundingClientRect();
+  const fin=`translate(${-c.width/2}px,${-c.height/2}px)`;
+  if(reduce){card.style.transform=fin;card.classList.add('open');[...ol.children].forEach(li=>li.classList.add('in'));return}
+  const sx=r.width/c.width,sy=r.height/c.height,dx=r.left-(c.left),dy=r.top-(c.top);
+  card.animate([
+    {transform:`translate(${dx}px,${dy}px) scale(${sx},${sy})`,opacity:.4,borderRadius:'10px'},
+    {transform:fin,opacity:1,borderRadius:'16px'}
+  ],{duration:420,easing:'cubic-bezier(.2,.8,.2,1)',fill:'forwards'});
+  card.style.transform=fin;
+  timers.push(setTimeout(()=>card.classList.add('open'),300));
+  [...ol.children].forEach((li,i)=>{
+    timers.push(setTimeout(()=>li.classList.add('in','run'),450+i*260));
+    timers.push(setTimeout(()=>li.classList.remove('run'),450+i*260+500));
+  });
+  document.getElementById('close').focus({preventScroll:true});
+}
+function hide(){
+  if(card.hidden)return;clearT();
+  const done=()=>{card.hidden=true;back.hidden=true;nodes.forEach(x=>x.classList.remove('on'));from&&from.focus({preventScroll:true})};
+  back.classList.remove('show');
+  if(reduce||!from){done();return}
+  const r=from.getBoundingClientRect(),cw=card.offsetWidth,ch=card.offsetHeight,bx=innerWidth/2,by=innerHeight/2;
+  card.animate([{transform:card.style.transform,opacity:1},{transform:`translate(${r.left-bx}px,${r.top-by}px) scale(${r.width/cw},${r.height/ch})`,opacity:0}],{duration:260,easing:'ease-in',fill:'forwards'}).onfinish=done;
+}
+nodes.forEach(g=>{
+  g.addEventListener('click',()=>show(g));
+  g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();show(g)}});
+});
+back.addEventListener('click',hide);
+document.getElementById('close').addEventListener('click',hide);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')hide()});
+</script>
+</body>
+</html>

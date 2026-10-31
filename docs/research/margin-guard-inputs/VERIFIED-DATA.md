@@ -1,0 +1,88 @@
+# Margin Guard: dữ liệu đầu vào đã xác minh (Shopee VN, người bán không thuộc Mall)
+
+Ngày kiểm: **31/10/2026**. Cách kiểm: mở trực tiếp bằng Chrome từng trang chính thức `banhang.shopee.vn/edu`, đọc nội dung đã render.
+Chỉ ghi những số đọc được nguyên văn trên trang. Số nào không đọc được thì ghi **CHƯA XÁC MINH**, không ước lượng.
+
+## 1. Phí trừ trên mỗi đơn
+
+| Field | Giá trị | Cơ sở tính | Hiệu lực | Nguồn (trang cập nhật) | Trích nguyên văn |
+|---|---|---|---|---|---|
+| `commission_bps` (Phí Cố Định) | theo ngành, xem mục 1a | **giá trị mỗi sản phẩm**, đã gồm GTGT | từ 23/05/2026 | [27540](https://banhang.shopee.vn/edu/article/27540) (28-05-2026) | "sẽ được tính trên giá trị mỗi sản phẩm theo biểu phí từng ngành hàng" |
+| `txn_fee_bps` (Phí Xử Lý Giao Dịch) | **600** (6%) | áp cho **mỗi đơn**, mọi phương thức thanh toán (thẻ, COD, chuyển khoản, NAPAS, SPayLater, Apple Pay, ShopeePay, …) | trang không ghi ngày bắt đầu mức 6%; ngày 24/04/2026 trên trang là ngày **đổi tên** từ "Phí Thanh Toán" | [251](https://banhang.shopee.vn/edu/article/251) (14-05-2026) | bảng phí: "6%" (đã gồm GTGT) |
+| `infra_fee_dong` (Phí Hạ Tầng) | **3.000** / đơn | mỗi đơn, đã gồm GTGT | đơn tạo từ 01/07/2025 | [25223](https://banhang.shopee.vn/edu/article/25223) (12-06-2025) | "mức thu 3.000Đ … cho mỗi đơn hàng" |
+| Điều kiện tính phí (cả 3 loại trên) | đơn "Đã giao" hoặc Trả hàng/Hoàn tiền "Hoàn tiền ngay" (trừ lý do Chưa nhận được hàng) | | | 251, 25223 | |
+| `piship_fee_dong` | **2.700** / đơn (trước đó 1.620) | chỉ khi tham gia PiShip | từ 23/05/2026 | 27540 | "1.620Đ/đơn → 2.700Đ/đơn" |
+| Duy Trì Hiển Thị | **TẠM HOÃN**, không đưa vào engine | | | 27540 | "Chương trình sẽ được tạm hoãn cho đến khi có thông báo mới." |
+
+> Ngày hiệu lực của mức 6% (theo `audit.md`, do worker kiểm nguồn đọc [2150](https://banhang.shopee.vn/edu/article/2150)): người bán non-Mall áp dụng từ **01/05/2026**, Mall từ **08/05/2026**. Bài 27451 mà Grok dẫn hiện trả về 404.
+> Cơ sở tính (bài 2150 hiện ghi ×6%): `(Giá SP trước Shopee trợ giá + Phí ship người mua trả − KM người bán − KM ngân hàng) × 6%`. Mức 4,91% trước đó **không có trên trang Shopee**, chỉ thấy trên blog (MISA, BigSeller).
+
+### 1a. Phí Cố Định theo ngành (non-Mall, đã gồm GTGT). Bảng đầy đủ: 27540 và file PDF đính kèm
+
+| Ngành | Trước 23/05/2026 | **Từ 23/05/2026** |
+|---|---|---|
+| Sắc Đẹp | 14% | **17%** |
+| Sức Khỏe | 12,5–14% | **15,5–17%** |
+| Thời trang | 12,5–13,5% | **13,5–16,5%** |
+| Chăm sóc thú cưng | 13% | **14%** |
+| Tiêu dùng còn lại | 10–13% | **11–16%** |
+| Nhà cửa & đời sống còn lại | 10–13% | **13–16%** |
+| Sách & Tạp chí | 12% | **14–15%** |
+| Ô tô | 1,5% | **3,5%** |
+| Mô tô, xe máy | 1,5% | **1,5%** |
+| Laptop, màn hình, điện thoại, máy tính bảng | 2% | **2%** |
+| Điện tử còn lại | 7,5–11% | **8,5–15%** |
+
+Người bán mới: miễn Phí Cố Định 30 ngày đầu. Ngoài ra, shop đăng sản phẩm đầu tiên trong khoảng 01/01–31/05/2026 được giảm phí từ 01/06 đến 31/08/2026: **giảm 50%** nếu ngành có phí dưới 6%, **giảm 3 điểm %** nếu ngành có phí từ 6% trở lên (ví dụ Sắc Đẹp 17% → 14%). Nguồn: 27540.
+
+> Mall: theo bài 251, bảng phí Mall có hiệu lực từ 29/05/2026, nhưng bảng chi tiết **CHƯA XÁC MINH** trong lần kiểm này. 27540 có link tới bài "Cập nhật phí cố định Sách & Tạp chí cho Mall từ 04/10/2026" nhưng chưa đọc.
+
+## 2. Voucher
+
+| Field | Giá trị | Hiệu lực | Nguồn | Trích nguyên văn |
+|---|---|---|---|---|
+| `voucher_xtra.fee_bps` | **550** (5,5%), mọi ngành, đã gồm GTGT | từ 23/05/2026 | [18182](https://banhang.shopee.vn/edu/article/18182) (14-05-2026), [27540](https://banhang.shopee.vn/edu/article/27540) | "5.5% giá trị mỗi sản phẩm (tối đa 50.000Đ/sản phẩm)" |
+| `voucher_xtra.fee_bps` (mức cũ) | 400 (4%) | trước 23/05/2026 | 27540 | bảng "Trước 23/05/2026: 4%" |
+| `voucher_xtra.cap_dong` | **50.000** / sản phẩm | | 18182 | |
+| `voucher_xtra.fee_base` | **giá mỗi sản phẩm**. Ví dụ trên trang: SP 500.000đ → phí 27.500đ; SP 5.000.000đ → phí bị chặn ở 50.000đ | | 18182 | |
+| `voucher_xtra.min_commitment_days` | **15** ngày | | 18182 | "ít nhất 15 ngày kể từ ngày kích hoạt thành công" |
+| `voucher_xtra.activation` | đăng ký trước 17h00 → kích hoạt 0h00 ngày hôm sau; sau 17h00 → sau 2 ngày. Hủy gói theo cùng quy tắc | | 18182 | |
+| `voucher_xtra.buyer_discount_max` | đến 25% (tối đa 2.000.000đ/ngày); kênh Livestream & Video đến 27% | | 18182 | |
+| `voucher_xtra.excludes_cofund` | **true** | từ 01/10/2025 | 18182 | "Chính sách Đồng Tài Trợ Mã ưu đãi sẽ không đồng thời áp dụng" |
+| `cofund.seller_share_bps` | **4000** (người bán 40%, Shopee 60%) | từ 23/05/2026 (trước đó 30/70) | [26053](https://banhang.shopee.vn/edu/article/26053) (14-05-2026), 27540 | "40% x Giá trị Mã ưu đãi … (tối đa 50.000Đ/sản phẩm)" |
+| `cofund.cap_dong` | **50.000** / sản phẩm | | 26053 | |
+| `cofund.scope` | chỉ áp cho **mã do Shopee phát hành**. Không áp cho: mã hoàn Xu, mã quà tặng, mã Đảm bảo giao đúng hạn, mã Freeship/phí ship, mã phát hành cùng đối tác, **mã của Người bán** | | 26053 | |
+| `cofund.allocation` | khi đơn có nhiều sản phẩm, phân bổ theo giá trị từng sản phẩm | | 26053 | |
+| `cofund.auto_enrolled` | true, không cần đăng ký | | 26053 | |
+| Đồng Tài Trợ có phải là phí không | **không**: không lập hóa đơn GTGT | | 26053 | "Đây không phải là Phí Dịch vụ Shopee" |
+
+## 3. Thuế khấu trừ tại nguồn (hộ kinh doanh / cá nhân kinh doanh cư trú)
+
+| Field | Giá trị | Nguồn | Ghi chú |
+|---|---|---|---|
+| `tax.vat_bps` hàng hóa | **100** (1%) | [24233](https://banhang.shopee.vn/edu/article/24233) (14-01-2026), [26823](https://banhang.shopee.vn/edu/article/26823) (04-03-2026) | dịch vụ / e-voucher: 5% |
+| `tax.pit_bps` hàng hóa | **50** (0,5%) | 24233, 26823 | dịch vụ: 2% |
+| `tax.base` | **Doanh thu tính thuế = Giá hàng − Mã giảm của Người bán − Phần Đồng Tài Trợ người bán chịu**. **Không** cộng phí ship | 24233 (ví dụ: A=110.000, C=10.000, D2=900 → G=99.100, thuế 1.487) | ⚠ Cơ sở tính thuế khác cơ sở tính phí |
+| Áp dụng | công ty (TNHH/CP) **không** bị khấu trừ. Khấu trừ áp cho đơn hoàn thành từ 01/07/2025 | 24233 | |
+| Từ năm 2026 | doanh thu năm ≤ 500 triệu không phải nộp GTGT/TNCN nhưng **sàn vẫn khấu trừ**; người bán tự quyết toán xin hoàn | 26823 | ảnh hưởng dòng tiền, không ảnh hưởng lợi nhuận cuối năm |
+
+## 4. Mâu thuẫn đã giải quyết
+
+| Tham số | Các file ghi | Kết luận theo trang chính thức |
+|---|---|---|
+| Voucher Xtra | 4% (`02-domain-facts.md`), 2% (`claude-crosscheck.md`, nguồn MISA), 5,5% (codex, grok) | **5,5% từ 23/05/2026**. Mức 4% là mức trước 23/05/2026. Mức 2% chỉ lấy từ MISA, mình chưa kiểm trên trang chính thức → **loại** |
+| Đồng tài trợ | 60/40 | ✅ đúng từ 23/05/2026 (trước đó 70/30) |
+| Phí Hạ Tầng 3.000đ | | ✅ đúng |
+| Thuế 1,5% | | ✅ đúng (1% + 0,5%, cho hàng hóa). **Cơ sở tính là giá sau khi trừ mã người bán và phần đồng tài trợ người bán chịu** |
+| Miễn phí cố định 30 ngày cho người bán mới | grok ghi "không có trong bài 27540" | ❌ **grok sai**: bài 27540 có nhắc "miễn Phí Cố Định trong 30 ngày đầu" |
+| Kịch bản B trong `claude-crosscheck.md` | dùng Voucher Xtra 2% | ❌ phải tính lại với 5,5%. Theo tính lại, Voucher Xtra bất lợi hơn Đồng Tài Trợ khoảng 3.345đ ở đơn ví dụ đó |
+
+## 5. CHƯA XÁC MINH, cần làm tiếp
+- Quy tắc giá campaign: giới hạn tăng giá trước khuyến mãi 7 ngày (bài 2310) và giá sàn/giá trần (bài 25248) đều trả về **404** → chưa xác minh.
+- Trần khuyến mãi 50% theo TT 39/2025 và NĐ 252/2026: thuvienphapluat chặn bot, cần mở thủ công.
+- Các tham số Flash Sale và Mua kèm trong `opencode-strategy.md` lấy từ shopplus nhưng không có URL cụ thể → không dùng.
+- ROAS "3–5": trang Shopee (16443) ghi là **ROI 3–5**, không phải ROAS.
+- Bảng phí cố định Shopee Mall từ 29/05/2026, và đợt chỉnh Sách & Tạp chí cho Mall từ 04/10/2026.
+- Freeship Xtra: đã dừng với shop không thuộc Mall từ 01/04/2025 (theo Codex, bài 12073). Mình chưa mở bài này.
+- Phí affiliate/KOC (AMS), chi phí ads, quy tắc cộng dồn giữa voucher shop và voucher sàn.
+- Cơ sở tính phí xử lý giao dịch: bài 251 không ghi công thức. Grok dẫn bài 2150 nhưng bài đó vẫn ghi mức 4,91% (cũ).
