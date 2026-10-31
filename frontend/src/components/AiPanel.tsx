@@ -16,7 +16,7 @@ export function AiPanel({
   onRefresh: () => void;
 }) {
   return (
-    <section className="card ai-panel" aria-labelledby="ai-heading">
+    <section className="card ai-panel" aria-labelledby="ai-heading" aria-busy={busy}>
       <span className="pill">AI · TẠO ỨNG VIÊN</span>
       <h2 id="ai-heading">Khám phá thêm cách cấu hình voucher</h2>
       <p>
