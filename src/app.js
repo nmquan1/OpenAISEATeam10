@@ -10,7 +10,7 @@ const money=n=>new Intl.NumberFormat('vi-VN',{maximumFractionDigits:0}).format(n
 const compact=n=>Math.abs(n)>=1e6?(n/1e6).toLocaleString('vi-VN',{maximumFractionDigits:2})+' tr':money(n);
 const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let result,scenario='base';
-function reset(){for(const [key,value] of Object.entries(defaults))if(form.elements[key])form.elements[key].value=value;run();}
+function reset(){clearAI();document.querySelector('#ai-context').value='';for(const [key,value] of Object.entries(defaults))if(form.elements[key])form.elements[key].value=value;run();}
 function input(){const x=Object.fromEntries(new FormData(form));for(const key of Object.keys(defaults))if(typeof defaults[key]==='number')x[key]=Number(x[key]);return x;}
 function run(){if(!form.reportValidity())return;try{result=evaluate(input());document.querySelector('#error').textContent='';render();}catch(e){document.querySelector('#error').textContent=e.message;document.querySelector('#results').innerHTML='<div class="card">Cần sửa đầu vào trước khi phân tích.</div>';result=null;}}
 function render(){const {recommended:r,input:x,strategies:ss}=result;const b=r.scenarios[1];const selected=r.scenarios.find(s=>s.key===scenario);const maximum=Math.max(1,...ss.map(s=>Math.abs(s.scenarios.find(v=>v.key===scenario).profit)));const mode={safe:'Lợi nhuận thấp nhất trong ba kịch bản',balanced:'70% lợi nhuận cơ sở + 30% lợi nhuận thấp nhất',growth:'Doanh thu kịch bản cơ sở'}[x.risk];
@@ -23,4 +23,40 @@ form.addEventListener('submit',e=>{e.preventDefault();run();});
 form.addEventListener('change',()=>{if(form.checkValidity())run();else{result=null;document.querySelector('#results').innerHTML='<div class="card">Đầu vào chưa hợp lệ. Sửa các trường rồi phân tích lại.</div>';}});
 document.querySelector('#reset').addEventListener('click',reset);
 document.querySelector('#export').addEventListener('click',()=>{if(!result||!form.reportValidity())return;run();if(!result)return;const blob=new Blob([JSON.stringify({application:'Market Maker',mode:'deterministic-demo',exportedAt:new Date().toISOString(),...result},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='market-maker-plan.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
+
+let aiBusy=false, aiRevision=0;
+const aiButton=document.querySelector('#ai-recommend');
+const aiOutput=document.querySelector('#ai-output');
+function clearAI(){aiRevision++;aiOutput.replaceChildren();}
+form.addEventListener('input',clearAI);
+form.addEventListener('change',clearAI);
+document.querySelector('#ai-context').addEventListener('input',clearAI);
+function validateAI(data){
+ if(!data || typeof data.provider!=='string' || typeof data.model!=='string' || !Array.isArray(data.candidates) || !data.candidates.length || !data.recommended || !Array.isArray(data.limitations))throw new Error('Phản hồi AI không đúng cấu trúc.');
+ for(const c of [...data.candidates,data.recommended]){
+  if(typeof c.name!=='string' || !c.voucher || !['fixed','percent'].includes(c.voucher.type) || !['value','cap','minimum'].every(k=>Number.isFinite(c.voucher[k])) || !Number.isFinite(c.worst) || !Number.isFinite(c.expected) || !Array.isArray(c.scenarios) || !c.scenarios.some(s=>s.key==='base'))throw new Error('Phương án AI thiếu thông số có thể kiểm tra.');
+  for(const s of c.scenarios)if(!['profit','orders','spend'].every(k=>Number.isFinite(s[k])))throw new Error('Kết quả tính toán AI không hợp lệ.');
+ }
+ return data;
+}
+function renderAI(data){
+ const voucher=v=>v.type==='percent'?`${v.value}% · tối đa ${money(v.cap)}`:money(v.value);
+ const r=data.recommended;
+ aiOutput.innerHTML=`<div class="ai-result"><p class="eyebrow">${escape(data.provider)} · ${escape(data.model)}</p><h3>Đề xuất: ${escape(r.name)}</h3><p>Voucher <strong>${escape(voucher(r.voucher))}</strong> · đơn tối thiểu <strong>${money(r.voucher.minimum)}</strong></p><div class="metrics"><div class="metric"><span>Lợi nhuận cơ sở</span><strong>${compact(r.expected)}</strong></div><div class="metric"><span>Lợi nhuận thấp nhất</span><strong>${compact(r.worst)}</strong></div><div class="metric"><span>Phương án được tính</span><strong>${data.candidates.length}</strong></div></div><div class="table-wrap"><table><thead><tr><th>Phương án AI</th><th>Voucher</th><th>Đơn tối thiểu</th><th>Lãi cơ sở</th><th>Lãi thấp nhất</th></tr></thead><tbody>${data.candidates.map(c=>`<tr><td>${escape(c.name)}</td><td>${escape(voucher(c.voucher))}</td><td>${money(c.voucher.minimum)}</td><td>${money(c.expected)}</td><td>${money(c.worst)}</td></tr>`).join('')}</tbody></table></div><details open><summary>Giới hạn của đề xuất</summary><ul>${data.limitations.map(s=>`<li>${escape(s)}</li>`).join('')}</ul></details></div>`;
+}
+aiButton.addEventListener('click',async()=>{
+ if(aiBusy || !form.reportValidity())return;
+ run();if(!result)return;
+ aiBusy=true;aiButton.disabled=true;aiButton.textContent='Đang phân tích bằng AI…';
+ const revision=++aiRevision;
+ aiOutput.textContent='Đang tạo phương án và kiểm tra các kịch bản. Có thể mất khoảng một phút.';
+ const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),120000);
+ try{
+  const response=await fetch('/api/recommend',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({input:input(),context:document.querySelector('#ai-context').value}),signal:controller.signal});
+  let data;try{data=await response.json();}catch{throw new Error('Server chưa hỗ trợ API AI hoặc trả về dữ liệu không hợp lệ.');}
+  if(!response.ok)throw new Error(typeof data.error==='string'?data.error:'Không thể lấy đề xuất AI. Kiểm tra cấu hình server.');
+  if(revision===aiRevision)renderAI(validateAI(data));
+ }catch(error){if(revision===aiRevision){aiOutput.replaceChildren();const p=document.createElement('p');p.className='warning';p.setAttribute('role','alert');p.textContent=error.name==='AbortError'?'AI phản hồi quá lâu. Bạn có thể thử lại.':error.message;aiOutput.append(p);}}
+ finally{clearTimeout(timeout);aiBusy=false;aiButton.disabled=false;aiButton.textContent='Đề xuất bằng AI ↗';}
+});
 reset();
