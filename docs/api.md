@@ -44,6 +44,8 @@ curl -sS http://127.0.0.1:4173/api/evaluate \
 
 Each strategy contains `discount`, three `scenarios` (`low`, `base`, `high`), `worst`, `expected` and `score`. A scenario contains visits, orders, redemptions, spend, revenue, rounded profit, stockout and exhaustion flags. `expected` is the base scenario profit, not a statistical expectation. Safe ranks by worst profit; balanced by 70% base profit + 30% worst profit; growth by base revenue.
 
+Conversion counts floor exact decimal rate arithmetic, with promotional conversion capped at visits. `stockout` means positive demand after voucher funding limits reaches available stock; `exhausted` means voucher demand within available stock exceeds quota or affordable redemptions. A resource warning is not triggered solely by demand that another resource already prevents serving.
+
 Recommendation adds no-voucher and current-voucher baselines to 1–5 provider candidates, validates them, deduplicates and ranks through the same engine. It does not return a calibrated demand forecast or run a multi-agent roundtable.
 
 ## Errors and access

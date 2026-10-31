@@ -9,10 +9,11 @@ for(const [id,fields] of Object.entries(specs))document.getElementById(id).inner
 const money=n=>new Intl.NumberFormat('vi-VN',{maximumFractionDigits:0}).format(n)+' ₫';
 const compact=n=>Math.abs(n)>=1e6?(n/1e6).toLocaleString('vi-VN',{maximumFractionDigits:2})+' tr':money(n);
 const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let result,scenario='base';
+let result,scenario='base',aiResult=null;
+function syncVoucherField(){form.elements.value.step=form.elements.type.value==='percent'?'any':'1';form.elements.value.max=form.elements.type.value==='percent'?'100':'1000000000';}
 function reset(){clearAI();document.querySelector('#ai-context').value='';for(const [key,value] of Object.entries(defaults))if(form.elements[key])form.elements[key].value=value;run();}
 function input(){const x=Object.fromEntries(new FormData(form));for(const key of Object.keys(defaults))if(typeof defaults[key]==='number')x[key]=Number(x[key]);return x;}
-function run(){if(!form.reportValidity())return;try{result=evaluate(input());document.querySelector('#error').textContent='';render();}catch(e){document.querySelector('#error').textContent=e.message;document.querySelector('#results').innerHTML='<div class="card">Cần sửa đầu vào trước khi phân tích.</div>';result=null;}}
+function run(){syncVoucherField();if(!form.reportValidity()){result=null;return;}try{result=evaluate(input());document.querySelector('#error').textContent='';render();}catch(e){document.querySelector('#error').textContent=e.message;document.querySelector('#results').innerHTML='<div class="card">Cần sửa đầu vào trước khi phân tích.</div>';result=null;}}
 function render(){const {recommended:r,input:x,strategies:ss}=result;const b=r.scenarios[1];const selected=r.scenarios.find(s=>s.key===scenario);const maximum=Math.max(1,...ss.map(s=>Math.abs(s.scenarios.find(v=>v.key===scenario).profit)));const mode={safe:'Lợi nhuận thấp nhất trong ba kịch bản',balanced:'70% lợi nhuận cơ sở + 30% lợi nhuận thấp nhất',growth:'Doanh thu kịch bản cơ sở'}[x.risk];
  document.querySelector('#results').innerHTML=`<article class="card recommend"><span class="pill">↗ ĐỀ XUẤT TRONG 3 PHƯƠNG ÁN</span><h2>${r.name}</h2><p>${escape(x.name)} · ${r.discount?`Giảm ${money(r.discount)} / đơn đủ điều kiện`:'Không dùng voucher shop'}</p><p>Tiêu chí: ${mode}. ${r.note}</p><div class="metrics"><div class="metric"><span>Lợi nhuận · cơ sở</span><strong class="${b.profit>=0?'positive':'negative'}">${compact(b.profit)}</strong></div><div class="metric"><span>Đơn hàng · cơ sở</span><strong>${b.orders}<small> đơn</small></strong></div><div class="metric"><span>Chi voucher · cơ sở</span><strong>${compact(b.spend)}</strong></div></div>${!result.eligible?'<div class="warning">Giá sản phẩm thấp hơn đơn tối thiểu: mô hình 1 SP/đơn không đủ điều kiện voucher.</div>':''}${r.worst<0?'<div class="warning">Ngay cả phương án đứng đầu vẫn có kịch bản lỗ. Cần điều chỉnh giá vốn, phí hoặc mức giảm trước khi chạy.</div>':''}</article>
  <article class="card"><div class="chart-head"><div><h3>Lợi nhuận thay đổi theo traffic</h3><p class="muted">Cùng đầu vào. Ba cách tiếp cận.</p></div><div class="toggle" role="group" aria-label="Kịch bản traffic">${[['low','Thấp'],['base','Cơ sở'],['high','Cao']].map(([key,label])=>`<button type="button" data-scenario="${key}" class="${scenario===key?'active':''}" aria-pressed="${scenario===key}">${label}</button>`).join('')}</div></div><div class="chart">${ss.map(s=>{const p=s.scenarios.find(v=>v.key===scenario).profit;return `<div class="bar-row"><span>${s.name}</span><div class="track"><div class="bar ${s.id===r.id?'winner':''}" style="width:${Math.abs(p)/maximum*100}%;${p<0?'background:#c03e29':''}"></div></div><strong class="${p<0?'negative':''}">${compact(p)}</strong></div>`;}).join('')}</div><div class="legend"><i></i> Phương án đề xuất <span>· ${selected.visits.toLocaleString('vi-VN')} lượt truy cập giả định · thanh thể hiện độ lớn, số âm là lỗ</span></div><div class="table-wrap"><table><thead><tr><th>Chiến lược</th><th>Giảm / đơn</th><th>Đơn hàng</th><th>Lượt voucher</th><th>Chi voucher</th></tr></thead><tbody>${ss.map(s=>{const p=s.scenarios.find(v=>v.key===scenario);return `<tr><td>${s.name}</td><td>${money(s.discount)}</td><td>${p.orders}</td><td>${p.redeemed}</td><td>${money(p.spend)}</td></tr>`;}).join('')}</tbody></table></div>${selected.stockout?'<p class="warning">Nhu cầu có thể chạm tồn kho. Lợi nhuận đã giới hạn theo số sản phẩm có thể bán.</p>':''}${selected.exhausted?'<p class="warning">Voucher có thể hết lượt hoặc ngân sách. Đơn vượt giới hạn quay về mức nhu cầu không ưu đãi.</p>':''}</article>
@@ -20,14 +21,22 @@ function render(){const {recommended:r,input:x,strategies:ss}=result;const b=r.s
  for(const btn of document.querySelectorAll('[data-scenario]'))btn.addEventListener('click',()=>{scenario=btn.dataset.scenario;render();});
 }
 form.addEventListener('submit',e=>{e.preventDefault();run();});
-form.addEventListener('change',()=>{if(form.checkValidity())run();else{result=null;document.querySelector('#results').innerHTML='<div class="card">Đầu vào chưa hợp lệ. Sửa các trường rồi phân tích lại.</div>';}});
+form.addEventListener('input',syncVoucherField);
+form.addEventListener('change',()=>{syncVoucherField();if(form.checkValidity())run();else{result=null;document.querySelector('#results').innerHTML='<div class="card">Đầu vào chưa hợp lệ. Sửa các trường rồi phân tích lại.</div>';}});
 document.querySelector('#reset').addEventListener('click',reset);
-document.querySelector('#export').addEventListener('click',()=>{if(!result||!form.reportValidity())return;run();if(!result)return;const blob=new Blob([JSON.stringify({application:'Market Maker',mode:'deterministic-demo',exportedAt:new Date().toISOString(),...result},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='market-maker-plan.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
+document.querySelector('#export').addEventListener('click',()=>{
+ run();if(!result)return;
+ const context=document.querySelector('#ai-context').value;
+ const ai=aiResult && JSON.stringify(aiResult.input)===JSON.stringify(result.input) && aiResult.context===context ? aiResult : null;
+ const plan={application:'Market Maker',mode:ai?'ai-assisted':'deterministic-demo',exportedAt:new Date().toISOString(),input:result.input,context,recommended:ai?ai.result.recommended:result.recommended,simulation:result,ai};
+ const blob=new Blob([JSON.stringify(plan,null,2)],{type:'application/json'});
+ const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='market-maker-plan.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+});
 
 let aiBusy=false, aiRevision=0;
 const aiButton=document.querySelector('#ai-recommend');
 const aiOutput=document.querySelector('#ai-output');
-function clearAI(){aiRevision++;aiOutput.replaceChildren();}
+function clearAI(){aiRevision++;aiResult=null;aiOutput.replaceChildren();}
 form.addEventListener('input',clearAI);
 form.addEventListener('change',clearAI);
 document.querySelector('#ai-context').addEventListener('input',clearAI);
@@ -48,14 +57,15 @@ aiButton.addEventListener('click',async()=>{
  if(aiBusy || !form.reportValidity())return;
  run();if(!result)return;
  aiBusy=true;aiButton.disabled=true;aiButton.textContent='Đang phân tích bằng AI…';
- const revision=++aiRevision;
+ clearAI();const revision=aiRevision;
+ const request={input:result.input,context:document.querySelector('#ai-context').value};
  aiOutput.textContent='Đang tạo phương án và kiểm tra các kịch bản. Có thể mất khoảng một phút.';
  const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),120000);
  try{
-  const response=await fetch('/api/recommend',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({input:input(),context:document.querySelector('#ai-context').value}),signal:controller.signal});
+  const response=await fetch('/api/recommend',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(request),signal:controller.signal});
   let data;try{data=await response.json();}catch{throw new Error('Server chưa hỗ trợ API AI hoặc trả về dữ liệu không hợp lệ.');}
   if(!response.ok)throw new Error(typeof data.error==='string'?data.error:'Không thể lấy đề xuất AI. Kiểm tra cấu hình server.');
-  if(revision===aiRevision)renderAI(validateAI(data));
+  if(revision===aiRevision){const validated=validateAI(data);renderAI(validated);aiResult={...request,result:validated};}
  }catch(error){if(revision===aiRevision){aiOutput.replaceChildren();const p=document.createElement('p');p.className='warning';p.setAttribute('role','alert');p.textContent=error.name==='AbortError'?'AI phản hồi quá lâu. Bạn có thể thử lại.':error.message;aiOutput.append(p);}}
  finally{clearTimeout(timeout);aiBusy=false;aiButton.disabled=false;aiButton.textContent='Đề xuất bằng AI ↗';}
 });

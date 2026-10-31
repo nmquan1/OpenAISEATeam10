@@ -3,6 +3,22 @@ import {defaults, parseInput} from '../../../contracts/model.js';
 export {defaults};
 // Symmetric half-up rounding for money, including loss values.
 const roundDong = value => Math.sign(value) * Math.round(Math.abs(value));
+// Preserve decimal rates exactly before flooring counts (e.g. 100 visits × 29%).
+function decimalRatio(value) {
+  const [mantissa, exponent = '0'] = String(value).split('e');
+  const [whole, fraction = ''] = mantissa.split('.');
+  const scale = fraction.length - Number(exponent);
+  const numerator = BigInt(whole + fraction);
+  return scale >= 0 ? [numerator, 10n ** BigInt(scale)] : [numerator * 10n ** BigInt(-scale), 1n];
+}
+function conversionOrders(visits, cvr, uplift = 0, factor = 0) {
+  const [c, cd] = decimalRatio(cvr);
+  const [u, ud] = decimalRatio(uplift);
+  const [f, fd] = decimalRatio(factor);
+  const upliftBase = 100n * ud * fd;
+  const orders = BigInt(visits) * c * (upliftBase + u * f) / (100n * cd * upliftBase);
+  return Number(orders > BigInt(visits) ? BigInt(visits) : orders);
+}
 export function evaluate(input) {
   const x = parseInput(input);
   const raw = x.type === 'percent' ? Math.min(x.price * x.value / 100, x.cap) : x.value;
@@ -11,16 +27,17 @@ export function evaluate(input) {
     const d = Math.round(discount * s.factor);
     const scenarios = ['low','base','high'].map(key => {
       const visits = Math.round(x.traffic * x[key]);
-      const organic = Math.floor(visits * x.cvr / 100);
-      const demand = Math.floor(visits * Math.min(1, x.cvr / 100 * (1 + (d > 0 ? x.uplift / 100 * s.factor : 0))));
+      const organic = conversionOrders(visits, x.cvr);
+      const demand = conversionOrders(visits, x.cvr, x.uplift, d > 0 ? s.factor : 0);
       const capacity = d > 0 ? Math.min(Math.floor(x.quota), Math.floor(x.budget / d)) : 0;
       // When quota runs out, additional sales revert to organic demand; no unlimited uplift.
       const redeemed = Math.min(Math.floor(x.stock), demand, capacity);
-      const orders = Math.min(Math.floor(x.stock), Math.max(organic, redeemed));
+      const fundedDemand = Math.max(organic, Math.min(demand, capacity));
+      const orders = Math.min(x.stock, fundedDemand);
       const spend = redeemed * d;
       const revenue = orders * x.price - spend;
       const profit = revenue * (1 - x.fee / 100) - orders * x.cost;
-      return {key, visits, orders, redeemed, spend, revenue, profit:roundDong(profit), stockout:demand >= x.stock, exhausted:d > 0 && demand > capacity};
+      return {key, visits, orders, redeemed, spend, revenue, profit:roundDong(profit), stockout:fundedDemand > 0 && fundedDemand >= x.stock, exhausted:d > 0 && Math.min(x.stock, demand) > capacity};
     });
     const worst = Math.min(...scenarios.map(y=>y.profit));
     const expected = scenarios[1].profit;

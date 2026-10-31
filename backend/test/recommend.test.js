@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { recommend,rankCandidates } from '../src/agent/recommend.mjs';
 import {defaults} from '../src/engine/index.js';
+import {setTimeout as delay} from 'node:timers/promises';
 const voucher={type:'percent',value:50,cap:10000,minimum:20000};
 test('50 percent capped at 10k respects cap and budget',()=>{
  const rows=rankCandidates(defaults,[voucher]);
@@ -27,4 +28,20 @@ test('Responses transport uses structured output and deterministic ranking',asyn
 });
 test('provider failures and incomplete responses never become recommendations',async()=>{
  for(const reply of [{ok:false,status:401},{ok:true,json:async()=>({status:'incomplete'})},{ok:true,json:async()=>({status:'completed',output:[]})}])await assert.rejects(recommend({input:defaults},{env:{OPENAI_API_KEY:'test-only'},fetchImpl:async()=>reply}));
+});
+
+test('provider body timeouts retain their timeout classification',async()=>{
+ await assert.rejects(recommend({input:defaults},{env:{OPENAI_API_KEY:'test-only'},fetchImpl:async()=>({ok:true,json:async()=>{throw new DOMException('Timed out','TimeoutError');}})}),error=>error.name==='TimeoutError');
+});
+
+test('provider timeout signal classifies body AbortError as a timeout',async()=>{
+ await assert.rejects(recommend({input:defaults},{env:{OPENAI_API_KEY:'test-only',OPENAI_TIMEOUT_MS:'1'},fetchImpl:async(_url,{signal})=>({ok:true,json:async()=>{
+  await delay(20);
+  assert.equal(signal.aborted,true);
+  throw new DOMException('Body aborted','AbortError');
+ }})}),error=>error.name==='TimeoutError');
+});
+
+test('malformed provider JSON remains a gateway failure',async()=>{
+ await assert.rejects(recommend({input:defaults},{env:{OPENAI_API_KEY:'test-only'},fetchImpl:async()=>({ok:true,json:async()=>{throw new SyntaxError('Bad JSON');}})}),error=>error.status===502 && /invalid JSON/.test(error.message));
 });
