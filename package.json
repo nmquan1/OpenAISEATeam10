@@ -6,12 +6,16 @@
   "engines": {
     "node": ">=22"
   },
-  "workspaces": ["backend", "frontend"],
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
   "scripts": {
     "start": "npm run start --workspace @market-maker/backend",
     "dev": "npm run dev --workspace @market-maker/backend",
     "build": "node scripts/build.mjs",
     "test": "node --test backend/test/*.test.js",
-    "check": "node scripts/check.mjs"
+    "check": "node scripts/check.mjs",
+    "research": "node scripts/research/run.mjs"
   }
 }

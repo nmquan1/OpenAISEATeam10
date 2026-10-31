@@ -8,6 +8,7 @@ The Node server binds `127.0.0.1:4173` by default. Its route modules live in `ba
 |---|---|---|---|
 | GET | `/api/health` | No body | `{status:"ok", contract:"market-maker.v1", mode:"scenario_only"}` |
 | POST | `/api/evaluate` | `{input: Input}` | Engine result: normalized input, three ranked strategies, recommended strategy, eligibility and assumptions |
+| POST | `/api/strategy` | `{products:[{name,price,cost?,category}], customers, vouchers, floor?, programme?}` | Voucher portfolio: per-product d_max after verified Shopee fees, vouchers with quantities, stacking matrix, worst-stack check, warnings; `status: no_feasible_strategy` when nothing keeps the floor |
 | POST | `/api/recommend` | `{input: Input, context?: string}` | Provider/model, ranked candidates, recommended candidate and limitations |
 
 POST requires `Content-Type: application/json`. The body limit is 32 KiB in bytes. Unknown top-level and input fields are rejected; HTTP requests must supply every `Input` field. The internal engine may accept a partial input and fill defaults for local scenario exploration; that convenience does not relax the HTTP contract.
@@ -75,3 +76,9 @@ The server accepts localhost/127.0.0.1 Host and same-origin browser requests on 
 `npm start` and `npm run dev` from the repo root delegate to the backend workspace and run the same local Node service, with graceful shutdown. `npm --prefix backend start` runs the same entrypoint; env loading and static paths resolve from the repository, so they do not depend on the caller working directory. The frontend and API share one origin on port 4173; no frontend development proxy is needed. Request headers/body reads have timeouts; provider calls use `OPENAI_TIMEOUT_MS`. Security headers include a same-origin script policy; the current chart needs inline styles.
 
 This stage is not a public multi-tenant production service. Public hosting still needs an explicit authenticated gateway/domain policy and TLS, tenant authorization, durable configuration/results, audit trails, distributed request/cost quotas, monitoring and backup/recovery. Current storage is the user's exported JSON, and the financial engine remains a scenario-only single-SKU model with aggregate fees. Deploying the static UI alone cannot enable AI.
+
+## Verified fees (optional input)
+
+`Input` accepts optional `category` (key of `contracts/fee-catalog.js`), `programme` (`standard` | `voucher_xtra`), `platformVoucher` (₫ Shopee voucher per order) and `floor` (% minimum margin). With `category` set, `/api/evaluate` and `/api/recommend` compute profit from the verified catalog (`fees@2026-10-31`) and add `fees` (per-order breakdown) and `portfolio` (same shape as `/api/strategy`) to the output. Without it, the legacy `fee` % is used and both are `null`.
+
+The catalog is updated by hand from candidates produced daily by `npm run research` (`scripts/research/run.mjs`, workflow `research-daily.yml`); the research engine never edits the catalog.

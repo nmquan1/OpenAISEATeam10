@@ -189,5 +189,19 @@ test('browser entry and transitive ES modules resolve through the public source 
       queue.push(new URL(specifier,`http://localhost${path}`).pathname);
     }
   }
-  assert.deepEqual([...visited].sort(),['/contracts/model.js','/engine/index.js','/src/app.js']);
+  assert.deepEqual([...visited].sort(),['/contracts/fee-catalog.js','/contracts/model.js','/engine/fees.js','/engine/index.js','/engine/portfolio.js','/src/app.js']);
+});
+
+test('strategy route returns a validated multi-voucher portfolio and merged outputs carry it', async t=>{
+  const {post} = await fixture(t);
+  const body = {customers:8000, vouchers:2500, products:[{name:'Serum Vitamin C 30ml',price:350000,cost:120000,category:'beauty'},{name:'Bông tẩy trang 120 miếng',price:45000,cost:33000,category:'beauty'}]};
+  const ok = await post('/api/strategy', body);
+  assert.equal(ok.status, 200);
+  assert.equal(ok.json().catalog_version, 'fees@2026-10-31');
+  assert.equal(ok.json().vouchers.reduce((s,v)=>s + v.qty, 0), 2500);
+  assert.equal((await post('/api/strategy', {...body, products:[{name:'x',price:1,category:'cars'}]})).status, 422);
+  const merged = await post('/api/evaluate', {input:{...defaults, category:'beauty'}});
+  assert.equal(merged.status, 200);
+  assert.equal(merged.json().fees.catalog_version, 'fees@2026-10-31');
+  assert.ok(merged.json().portfolio.status);
 });

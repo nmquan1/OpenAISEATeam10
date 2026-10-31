@@ -53,6 +53,7 @@ data/                     CSV template
 |---|---|
 | `GET /api/health` | Trạng thái tiến trình và phiên bản contract |
 | `POST /api/evaluate` | Validate input rồi tính ba chiến lược bằng engine |
+| `POST /api/strategy` | Danh mục voucher nhiều mã theo phí Shopee đã xác minh (xem `docs/api.md`) |
 | `POST /api/recommend` | Validate input/context, gọi provider và tính lại/xếp hạng candidate |
 
 Xem [HTTP contract, bounds và lỗi](docs/api.md). Token `MARKET_MAKER_API_TOKEN` tùy chọn chỉ dành cho API client/gateway; UI chưa có luồng đăng nhập hoặc gửi token. Bật token sẽ chặn request AI từ UI hiện tại.

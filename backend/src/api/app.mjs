@@ -8,11 +8,12 @@ import {HttpError, json, readJson} from './http.mjs';
 import {healthRoute} from './routers/health.mjs';
 import {evaluateRoute} from './routers/evaluate.mjs';
 import {recommendationRoute} from './routers/recommend.mjs';
+import {strategyRoute} from './routers/strategy.mjs';
 const root = resolve(import.meta.dirname, '../../..');
 const types = {'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.md':'text/plain; charset=utf-8'};
 const digest = s=>createHash('sha256').update(s).digest();
 export function createApp({recommendImpl = recommend, apiToken = '', logger = console} = {}) {
-  const routes = [healthRoute, evaluateRoute, recommendationRoute(recommendImpl)];
+  const routes = [healthRoute, evaluateRoute, strategyRoute, recommendationRoute(recommendImpl)];
   let windowStart = Date.now(), requests = 0;
   const server = http.createServer(async (req,res)=>{
     const requestId = randomUUID();
@@ -49,7 +50,9 @@ export function createApp({recommendImpl = recommend, apiToken = '', logger = co
       const assets = {
         '/':'frontend/index.html', '/index.html':'frontend/index.html',
         '/src/app.js':'frontend/src/app.js', '/src/style.css':'frontend/src/style.css',
-        '/engine/index.js':'backend/src/engine/index.js', '/contracts/model.js':'contracts/model.js',
+        '/engine/index.js':'backend/src/engine/index.js', '/engine/fees.js':'backend/src/engine/fees.js',
+        '/engine/portfolio.js':'backend/src/engine/portfolio.js', '/contracts/model.js':'contracts/model.js',
+        '/contracts/fee-catalog.js':'contracts/fee-catalog.js',
         '/docs/research.md':'docs/research.md', '/docs/architecture.md':'docs/architecture.md',
         '/docs/data-contract.md':'docs/data-contract.md', '/docs/api.md':'docs/api.md'
       };
