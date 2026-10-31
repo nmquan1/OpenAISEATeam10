@@ -1,0 +1,13 @@
+{
+  "name": "@market-maker/contracts",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./model.ts",
+    "./portfolio": "./portfolio.ts"
+  },
+  "dependencies": {
+    "@sinclair/typebox": "^0.34.52"
+  }
+}

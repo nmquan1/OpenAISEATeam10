@@ -4,4 +4,8 @@ dist/
 .env.*
 !.env.example
 .DS_Store
+.local/
+playwright-report/
+test-results/
+*.tsbuildinfo
 data/fees/candidates/

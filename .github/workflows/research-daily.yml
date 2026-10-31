@@ -1,7 +1,7 @@
 name: Fee research (daily)
 on:
   schedule:
-    - cron: '0 23 * * *'   # 06:00 Asia/Ho_Chi_Minh
+    - cron: '0 23 * * *' # 06:00 Asia/Ho_Chi_Minh
   workflow_dispatch:
 permissions:
   contents: read
@@ -13,14 +13,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - run: npm ci
       - name: Install Playwright for code-level quote verification
-        run: npx --yes playwright@1.49.1 install --with-deps chromium && npm i --no-save playwright@1.49.1
+        run: npx playwright install --with-deps chromium
       - name: Run research engine
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY_TEAM10_HACKATHON }}
+          OPENAI_RESEARCH_MODEL: ${{ vars.OPENAI_RESEARCH_MODEL }}
         run: |
           if [ -z "$OPENAI_API_KEY" ]; then echo "Secret OPENAI_API_KEY_TEAM10_HACKATHON is not set; skipping."; exit 0; fi
-          node scripts/research/run.mjs
+          if [ -z "$OPENAI_RESEARCH_MODEL" ]; then echo "Set repository variable OPENAI_RESEARCH_MODEL; skipping."; exit 0; fi
+          npm run research
       - uses: actions/upload-artifact@v4
         if: always()
         with:

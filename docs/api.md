@@ -1,84 +1,98 @@
-# Market Maker HTTP contract v1
+# HTTP API v2
 
-The Node server binds `127.0.0.1:4173` by default. Its route modules live in `backend/src/api/routers/`; `backend/src/api/app.mjs` applies transport rules, and `contracts/model.js` is the shared browser/engine/API input validator. The static `dist/` export has no HTTP API.
+Fastify 5 + TypeScript serves the API. Open **http://localhost:4173/api/docs/** for Swagger UI and **Try it out**; `/api/docs/json` returns the generated OpenAPI document. Schemas and TypeScript types come from `contracts/model.ts` (TypeBox), including request examples and response schemas.
+
+This MVP has one **shared workspace and no login**. Every caller can read the same saved runs and consumes the same daily AI allowance. CORS and Host checks control browser/network configuration; they are not user permissions.
 
 ## Routes
 
-| Method | Path | Request | Success |
-|---|---|---|---|
-| GET | `/api/health` | No body | `{status:"ok", contract:"market-maker.v1", mode:"scenario_only"}` |
-| POST | `/api/evaluate` | `{input: Input}` | Engine result: normalized input, three ranked strategies, recommended strategy, eligibility and assumptions |
-| POST | `/api/strategy` | `{products:[{name,price,cost?,category}], customers, vouchers, floor?, programme?}` | Voucher portfolio: per-product d_max after verified Shopee fees, vouchers with quantities, stacking matrix, worst-stack check, warnings; `status: no_feasible_strategy` when nothing keeps the floor |
-| POST | `/api/recommend` | `{input: Input, context?: string}` | Provider/model, ranked candidates, recommended candidate and limitations |
+| Method | Path                    | Body / result                                                                                                          |
+| ------ | ----------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/health`           | `{status, schema_version, mode, aiConfigured, modelConfigured}`; configuration flags contain no credentials            |
+| POST   | `/api/evaluate`         | `{input}` → deterministic evaluation; saves the complete input/result                                                  |
+| POST   | `/api/recommend`        | `{input, context}` → provider candidates ranked by the same engine; saves input/result/AI metadata                     |
+| POST   | `/api/strategy`         | `{products, customers, vouchers, floor?, programme?}` → separate heuristic portfolio, not saved as a campaign forecast |
+| POST   | `/api/history/validate` | `{csv}` → `{source:"user_reported", campaigns:[...]}`; no automatic forecast calibration                               |
+| GET    | `/api/runs`             | `{runs:[...]}`; latest 50 shared runs, newest first                                                                    |
+| GET    | `/api/runs/:id`         | One saved run; UUID path parameter; missing ID returns 404                                                             |
 
-POST requires `Content-Type: application/json`. The body limit is 32 KiB in bytes. Unknown top-level and input fields are rejected; HTTP requests must supply every `Input` field. The internal engine may accept a partial input and fill defaults for local scenario exploration; that convenience does not relax the HTTP contract.
+POST bodies must be JSON and fit within **32 KiB including JSON escaping/overhead**. Validation rejects unknown fields, missing required fields, numeric strings and invalid integer/rate bounds. Fastify coercion, default insertion and removal of extra fields are disabled. Domain validation additionally checks traffic ordering, stock/basket constraints and response-curve consistency.
 
-## Input
+## Typed input
 
-Money is integer VND. Percentages use **percent units**, so `15` means 15%, not 15 basis points. This differs from Margin Guard's integer-bps contracts; passing either API's objects directly to the other is unsupported.
-
-| Fields | Type and bounds |
-|---|---|
-| `name`, `code` | Nonblank strings, at most 100 / 30 characters |
-| `price` | Positive integer VND, at most 1,000,000,000 |
-| `cost`, `cap`, `minimum`, `budget` | Integer VND, 0–1,000,000,000 |
-| `stock`, `traffic`, `quota` | Integers, 0–1,000,000 |
-| `fee`, `cvr` | Numbers, 0–100 (%) |
-| `low`, `base`, `high` | Traffic multipliers, 0–100; `low <= base <= high` |
-| `uplift` | Relative CVR uplift (%), 0–1,000 |
-| `type` | `fixed` or `percent` |
-| `value` | Fixed: integer VND, 0–1,000,000,000; percent: number, 0–100 |
-| `risk` | `safe`, `balanced`, `growth` |
-| `scope` | `product` or `shop`; both still simulate one SKU per order |
-| `start`, `end` | Valid calendar wall-clock strings `YYYY-MM-DDTHH:mm`, Asia/Ho_Chi_Minh; end after start |
-
-`context` is optional text of at most 10,000 characters. It helps candidate generation and cannot override typed costs, budget or stock. The UI currently caps context at 4,000 characters. Campaign name/code/scope/time are metadata; neither route publishes or schedules a Shopee campaign.
-
-A complete example can be generated from the contract's defaults:
+Use Swagger's complete examples or generate a request from the canonical defaults:
 
 ```sh
-node --input-type=module -e "import {defaults} from './contracts/model.js'; console.log(JSON.stringify({input:defaults}))" > /tmp/market-maker-request.json
-curl -sS http://127.0.0.1:4173/api/evaluate \
+npx tsx -e "import {defaults} from './contracts/model.ts'; console.log(JSON.stringify({input:defaults}))" > /tmp/market-maker-input.json
+curl http://127.0.0.1:4173/api/evaluate \
   -H 'Content-Type: application/json' \
-  --data-binary @/tmp/market-maker-request.json
+  --data-binary @/tmp/market-maker-input.json
 ```
 
-Each strategy contains `discount`, three `scenarios` (`low`, `base`, `high`), `worst`, `expected` and `score`. A scenario contains visits, orders, redemptions, spend, revenue, rounded profit, stockout and exhaustion flags. `expected` is the base scenario profit, not a statistical expectation. Safe ranks by worst profit; balanced by 70% base profit + 30% worst profit; growth by base revenue.
+| Input group   | Fields / units                                                                                                            |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `product`     | `name`; fixed-composition `lines[]` with SKU, quantity, unit price/cost, packaging and stock                              |
+| `voucher`     | Discriminated `fixed` (`amount_dong`) or `percent` (`rate_bps`, `cap_dong`), plus `minimum_dong` and `seller_funding_bps` |
+| `economics`   | Fee/tax/return/nonrefunded-fee rates; shipping, ads and return shipping costs; return resale share                        |
+| `assumptions` | Visits, baseline CVR, low/base/high traffic factors and an explicit discount-response curve                               |
+| `constraints` | Voucher budget and redemption quota                                                                                       |
+| `objective`   | `safe`, `balanced` or `growth`                                                                                            |
 
-Recommendation adds no-voucher and current-voucher baselines to 1–5 provider candidates, validates them, deduplicates and ranks through the same engine. It does not return a calibrated demand forecast or run a multi-agent roundtable.
+Money is integer **đồng**; rates are integer **basis points** (`10000 = 100%`, `1500 = 15%`). `_dong`, `_bps` and `_units` suffixes identify units. Do not send the old flat v1 `%` input. The product is a declared basket with fixed quantities; the engine does not infer the distribution of different customer baskets.
 
-## Errors and access
+Recommendation context is structured:
 
-Errors use `application/problem+json`, with `type`, `title`, `status`, `detail`, `instance`, `requestId` and an `error` string retained for the current UI. `X-Request-Id` is returned on responses. Unexpected server errors expose a generic message.
+```json
+{
+  "seller_notes": "Ưu tiên lợi nhuận, giữ ngân sách đã nhập.",
+  "history": {
+    "source": "user_reported",
+    "campaigns": [
+      {
+        "label": "Sale trước",
+        "visits": 1000,
+        "orders": 30,
+        "revenue_dong": 8970000,
+        "voucher_spend_dong": 300000
+      }
+    ]
+  }
+}
+```
 
-| Status | Meaning |
-|---|---|
-| 400 | Malformed JSON |
-| 401 | Missing/invalid bearer token when configured |
-| 403 | Unapproved Host or Origin |
-| 404 | Unknown route or static file |
-| 405 | Wrong method; see `Allow` |
-| 413 | Request exceeds body limit |
-| 415 | POST does not contain JSON |
-| 422 | Request violates the data model |
-| 429 | Request rate or AI concurrency limit; see `Retry-After` |
-| 500 | Unexpected internal failure |
-| 502 | Provider unavailable, rejected request or invalid candidate response |
-| 503 | AI credentials are not configured |
-| 504 | AI request timed out |
+`context` is required on recommendation requests; an empty note is `{seller_notes:""}`. History is optional, contains at most 20 campaigns and cannot claim more orders than visits. The CSV route expects exactly `label,visits,orders,revenue_dong,voucher_spend_dong`, with explicit nonnegative integers, unique normalized labels and no missing numerical cells. See `data/history-template.csv`.
 
-The server accepts localhost/127.0.0.1 Host and same-origin browser requests on its listening port. It does not trust forwarded headers. It currently allows 60 POST requests per minute **per process**, shared by all callers, and one concurrent recommendation per app instance. These are local safeguards, not distributed quotas.
+## Results and provenance
 
-`MARKET_MAKER_API_TOKEN`, when set, requires `Authorization: Bearer <token>` on APIs except health. The browser UI does not supply this server-side token, so enabling it requires an authenticated gateway or separate API client. Never embed the token or OpenAI key in browser code. Static serving allowlists the HTML, frontend JS/CSS, Markdown docs and two shared browser modules: `/engine/index.js` maps to `backend/src/engine/index.js`, and `/contracts/model.js` maps to `contracts/model.js`. Other backend source, `.env`, `.git` and data files are not static assets.
+Evaluation returns `schema_version`, `engine_version`, `mode:"scenario_only"`, normalized `input`, ranked `strategies`, `recommended` and `limitations`. Each strategy includes its voucher, effective discount, low/base/high scenarios, base/worst profit and score. Scenario money uses `_dong`; results remain bounded by stock, quota and seller-funded budget. The declared response curve drives demand consistently for deterministic and AI-generated vouchers.
 
-## Deployment boundary
+Recommendation also returns the provider's actual model, structured context, prompt version, provider request ID, token usage, rejected-candidate count, optional cost estimate and `decision_context`. History produces a transparent summary; `applied_to_forecast:false` makes clear that it has not trained or calibrated demand. Estimates are not provider invoices.
 
-`npm start` and `npm run dev` from the repo root delegate to the backend workspace and run the same local Node service, with graceful shutdown. `npm --prefix backend start` runs the same entrypoint; env loading and static paths resolve from the repository, so they do not depend on the caller working directory. The frontend and API share one origin on port 4173; no frontend development proxy is needed. Request headers/body reads have timeouts; provider calls use `OPENAI_TIMEOUT_MS`. Security headers include a same-origin script policy; the current chart needs inline styles.
+Saved runs contain `id`, `createdAt`, `kind`, `schemaVersion`, `input` and full `result`. Notes/history submitted for AI are included in the saved result. There is no private per-person history in this MVP.
 
-This stage is not a public multi-tenant production service. Public hosting still needs an explicit authenticated gateway/domain policy and TLS, tenant authorization, durable configuration/results, audit trails, distributed request/cost quotas, monitoring and backup/recovery. Current storage is the user's exported JSON, and the financial engine remains a scenario-only single-SKU model with aggregate fees. Deploying the static UI alone cannot enable AI.
+## Limits and cancellation
 
-## Verified fees (optional input)
+- Evaluation: 60 requests/minute per connection IP, per process.
+- Recommendation: 10 requests/minute per connection IP, per process; one active AI request per process/workspace.
+- History reads/CSV validation: 120 requests/minute per connection IP, per process.
+- `AI_DAILY_CALL_LIMIT`: 1–20 attempted AI calls across the shared workspace per UTC day. An accepted attempt consumes quota before provider work; provider failures and cancellations do not refund it.
 
-`Input` accepts optional `category` (key of `contracts/fee-catalog.js`), `programme` (`standard` | `voucher_xtra`), `platformVoucher` (₫ Shopee voucher per order) and `floor` (% minimum margin). With `category` set, `/api/evaluate` and `/api/recommend` compute profit from the verified catalog (`fees@2026-10-31`) and add `fees` (per-order breakdown) and `portfolio` (same shape as `/api/strategy`) to the output. Without it, the legacy `fee` % is used and both are `null`.
+The local JSON store serializes writes and replaces snapshots atomically; only one backend process may write a file. Supabase uses an atomic PostgreSQL quota function, so the shared daily counter also holds across backend instances. Minute limits and concurrent-request limits remain process-local. The server does not trust forwarded IP headers; a reverse proxy may make visitors share a connection IP.
 
-The catalog is updated by hand from candidates produced daily by `npm run research` (`scripts/research/run.mjs`, workflow `research-daily.yml`); the research engine never edits the catalog.
+Client disconnect forwards cancellation to the provider. Provider timeout is controlled by `OPENAI_TIMEOUT_MS`; cancellation cannot guarantee that the provider has not already billed work. SIGTERM/SIGINT stops accepting work and waits for active requests; a hosting platform can impose its own shorter shutdown deadline. A successful result is returned after saving; storage failure can therefore fail a request after provider work already occurred.
+
+## Configuration and errors
+
+`HOST`, `PORT`, `ALLOWED_HOSTS` and `ALLOWED_ORIGINS` configure binding and exact allowlists. Hosts omit scheme/port; origins include scheme and port where applicable. Allowed origins receive CORS headers and JSON preflight support. Requests without an Origin header still need an allowed Host.
+
+AI requires server-only `OPENAI_API_KEY` and explicit `OPENAI_MODEL`. `RUN_STORE=local` uses `RUN_STORE_PATH`; `RUN_STORE=supabase` requires `SUPABASE_URL` and server-only `SUPABASE_SERVICE_ROLE_KEY`. No frontend Supabase key, JWT or session is required. See [deployment](deployment.md).
+
+Errors use `application/problem+json` with `status`, `detail`, `error` and `requestId`; `X-Request-Id` is also returned. Typical statuses: 400 malformed JSON; 403 Host/Origin denied; 404 missing route/run; 413 body too large; 415 unsupported media type; 422 schema/domain violation; 429 minute/concurrency/daily limit; 500 unexpected internal failure; 502 invalid/unavailable provider; 503 missing AI config or unavailable database; 504 provider timeout. Unexpected errors hide internal messages. Server logs redact credential headers and do not log request bodies/prompts.
+
+Tests cover local HTTP behavior, mocked provider/database transport and cancellation. Live OpenAI, Supabase SQL/RLS and cloud hosting have **not** been verified by these tests.
+
+## Catalog fees and portfolio compatibility
+
+Optional `input.marketplace` is `{category, programme:"standard"|"voucher_xtra", platform_voucher_dong}`. It selects the catalog snapshot and replaces manual `economics.fee_bps`/`tax_bps`; all other costs and returns remain active. One category applies to the whole fixed basket. Each strategy includes `fees:{catalog_version, without_voucher, with_voucher}` so fee comparisons refer to that exact strategy. Seller co-funding is deducted from revenue once, independently of shop voucher budget; infrastructure applies once per order and item caps apply per unit. New calculations emit `engine_version:"2.1.0"`; validators retain support for saved `2.0.0` results.
+
+`POST /api/strategy` keeps the portfolio workflow from main. Products use `{name, price, cost?, category}` with integer VND; `customers` and `vouchers` are nonnegative integers; optional `floor` is a percentage (default 20), `programme` defaults to `standard`. Response includes `mode:"heuristic_only"`, assumptions, products, allocations, pairing matrix, sampled stack checks, warnings and limitations. Missing costs are explicitly inferred; sampling does not prove all possible stacks safe. The route has its own 60 requests/IP/minute process-local limit. Swagger provides complete examples.
