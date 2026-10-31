@@ -45,3 +45,15 @@ test('provider timeout signal classifies body AbortError as a timeout',async()=>
 test('malformed provider JSON remains a gateway failure',async()=>{
  await assert.rejects(recommend({input:defaults},{env:{OPENAI_API_KEY:'test-only'},fetchImpl:async()=>({ok:true,json:async()=>{throw new SyntaxError('Bad JSON');}})}),error=>error.status===502 && /invalid JSON/.test(error.message));
 });
+
+test('one invalid AI candidate is dropped instead of failing the whole proposal',()=>{
+ const rows=rankCandidates(defaults,[{...voucher,value:101},{type:'fixed',value:1500.5,cap:0,minimum:0},voucher]);
+ assert.ok(rows.some(s=>s.voucher.value===50));
+ assert.ok(!rows.some(s=>s.voucher.value===101||s.voucher.value===1500.5));
+});
+
+test('zero-discount vouchers collapse into the no-voucher baseline',()=>{
+ const rows=rankCandidates(defaults,[{type:'percent',value:15,cap:0,minimum:0},voucher]);
+ assert.equal(rows.filter(s=>s.discount===0).length,1);
+ assert.equal(rows.find(s=>s.discount===0).name,'Không voucher');
+});

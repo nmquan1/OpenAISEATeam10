@@ -6,15 +6,20 @@ const schema={type:'object',properties:{candidates:{type:'array',items:{type:'ob
 export function rankCandidates(input, candidates){
  const base=evaluate(input).input;
  if(!Array.isArray(candidates)||candidates.length<1||candidates.length>5)throw new Error('AI must return 1–5 candidates');
- const all=[{type:'fixed',value:0,cap:0,minimum:0},{type:base.type,value:base.value,cap:base.cap,minimum:base.minimum},...candidates];
- const seen=new Set();
- return all.map(v=>{
+ const score=v=>{
   if(!v||Object.keys(v).sort().join()!=='cap,minimum,type,value')throw new Error('Invalid voucher fields');
   for(const k of ['value','cap','minimum'])if(!Number.isFinite(v[k])||v[k]<0||v[k]>1e9)throw new Error('Invalid voucher amount');
   const result=evaluate({...base,...v});
   const s=result.strategies.find(s=>s.id==='full');
-  return {...s,id:JSON.stringify([v.type,v.value,v.cap,v.minimum]),voucher:v,name:v.value===0?'Không voucher':v.type==='percent'?`Giảm ${v.value}%, tối đa ${v.cap.toLocaleString('vi-VN')} ₫`:`Giảm ${v.value.toLocaleString('vi-VN')} ₫`};
- }).filter(s=>{if(seen.has(s.id))return false;seen.add(s.id);return true;}).sort((a,b)=>b.score-a.score);
+  return {...s,id:JSON.stringify([v.type,v.value,v.cap,v.minimum]),voucher:v,name:s.discount===0?'Không voucher':v.type==='percent'?`Giảm ${v.value}%, tối đa ${v.cap.toLocaleString('vi-VN')} ₫`:`Giảm ${v.value.toLocaleString('vi-VN')} ₫`};
+ };
+ // Invalid AI candidates are dropped individually; the call fails only when none survive.
+ const proposed=candidates.flatMap(v=>{try{return [score(v)];}catch{return [];}});
+ if(!proposed.length)throw new Error('AI returned no valid candidates');
+ // One SKU per order: the per-order discount fully determines the outcome, so dedupe on it (baselines win).
+ const seen=new Set();
+ return [score({type:'fixed',value:0,cap:0,minimum:0}),score({type:base.type,value:base.value,cap:base.cap,minimum:base.minimum}),...proposed]
+  .filter(s=>{if(seen.has(s.discount))return false;seen.add(s.discount);return true;}).sort((a,b)=>b.score-a.score);
 }
 export async function recommend(body,{env=process.env,fetchImpl=fetch}={}){
  const {input,context}=parseRequest(body,{context:true});
