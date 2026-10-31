@@ -1,0 +1,49 @@
+{
+  "schema_version": "1.0",
+  "dataset_version": "reference-v1-bba11957ae5e768b",
+  "feature_version": "decision-evidence.v1",
+  "record_count": 4328,
+  "counts_by_kind": {
+    "profile": 1089,
+    "association": 3141,
+    "voucher_geometry": 96,
+    "basket": 2
+  },
+  "source_dataset_sha256": "bba11957ae5e768b970593a1bfc5c1bb7de6f9dcac45b66f2cb85d620e26a852",
+  "source_artifacts": {
+    "decision_features.csv": "55feb2802d4484cd31bf7cc9fbf57a142ed7f700e5cdeb043f0fb5a88ea2622f",
+    "associations.csv": "645d6d8ba99ec989d7590767d30b3eaae6cf8403c4476ca20e3b5f872d90eff2",
+    "voucher_geometry.csv": "a2fa01519d3ce214c8fb20562b3a8097eae6f4e86df704cbcb305f833b32f18b",
+    "basket_profiles.csv": "950a10430f59d11afebb892d8c7acdf727a209494af6c7334249712112d363cc"
+  },
+  "source_validation_sha256": "39497c59a46debe52e05c135bb5b9bea694347c85498eb44a5e5aae3bc598425",
+  "index": {
+    "file": "decision_evidence.jsonl",
+    "sha256": "bba6710b1f3399384df54c7939af0a775f24f1334298b8075d95ad48bacfc8e1",
+    "bytes": 8434216
+  },
+  "sources": {
+    "uci_online_retail_ii": {
+      "money_unit": "GBP",
+      "amount_basis": "retained_product_subtotal_proxy",
+      "time_basis": "source_invoice_datetime",
+      "source_url": "https://archive.ics.uci.edu/dataset/502/online+retail+ii",
+      "license": "CC BY 4.0",
+      "attribution": "Chen, D. (2012). Online Retail II. UCI Machine Learning Repository. https://doi.org/10.24432/C5CG6D",
+      "scope": "UK gift retailer, 2009–2011; customer residence is not merchant market."
+    },
+    "completejourney": {
+      "money_unit": "dollar_unspecified",
+      "amount_basis": "retailer_receipts",
+      "time_basis": "rebased_2017_derived_seconds",
+      "source_url": "https://bradleyboehmke.github.io/completejourney/",
+      "license": "CC0 declared by completejourney data package; separate retired upstream terms unresolved",
+      "attribution": "completejourney data package, Brad Boehmke and Steven M. Mortimer; upstream Complete Journey 2.0 / 84.51 degrees.",
+      "scope": "Grocery categories; dollar ISO currency unverified; dates rebased."
+    }
+  },
+  "scope": "Versioned source-native aggregate reference. No embeddings, private identities, causal claims or merchant forecast calibration.",
+  "metric_policy": "Decimal strings preserve source precision; null means unavailable. Counts are exact integers. Recompute new arithmetic in code.",
+  "lineage_policy": "row_id is the physical CSV line number including the header as line 1; file SHA256 pins the exact row source.",
+  "reproduction": "python3 scripts/evidence/build.py --source /path/to/market-maker-dataset"
+}

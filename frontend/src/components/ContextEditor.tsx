@@ -1,14 +1,18 @@
 import { useRef } from 'react';
 import type { DecisionContext } from '../types';
 import { NumberField } from './Field';
+import type { EvaluationInput } from '@market-maker/contracts';
+import { EvidencePreview } from './EvidencePreview';
 
 export function ContextEditor({
+  input,
   context,
   onChange,
   onImportCsv,
   importBusy,
   importDisabled,
 }: {
+  input: EvaluationInput;
   context: DecisionContext;
   onChange: (value: DecisionContext) => void;
   onImportCsv: (file: File) => void;
@@ -45,6 +49,24 @@ export function ContextEditor({
         Chỉ gửi dữ liệu tổng hợp. Không nhập tên, điện thoại, địa chỉ khách hoặc secrets. Ghi chú
         không tự đổi giá vốn/ngân sách trong form.
       </p>
+      <details className="advanced">
+        <summary>Reference lịch sử nước ngoài · tùy chọn</summary>
+        <label htmlFor="reference-query">
+          Tìm reference cho AI
+          <input
+            id="reference-query"
+            value={context.reference_query ?? ''}
+            maxLength={500}
+            placeholder="Ví dụ: cat litter cat food; percent cap minimum spend"
+            onChange={(event) => onChange({ ...context, reference_query: event.target.value })}
+          />
+        </label>
+        <p className="hint">
+          Để trống để tắt. Chọn từ khóa phù hợp sản phẩm; không có reference sẽ trả rỗng. Các số
+          tiền nguồn không được dùng làm mức giảm VND.
+        </p>
+        <EvidencePreview input={input} context={context} disabled={importDisabled} />
+      </details>
       <div className="actions">
         <button
           className="secondary"
@@ -125,7 +147,12 @@ export function ContextEditor({
                 onChange(
                   remaining.length
                     ? { ...context, history: { source: 'user_reported', campaigns: remaining } }
-                    : { seller_notes: context.seller_notes },
+                    : {
+                        seller_notes: context.seller_notes,
+                        ...(context.reference_query !== undefined
+                          ? { reference_query: context.reference_query }
+                          : {}),
+                      },
                 );
               }}
             >

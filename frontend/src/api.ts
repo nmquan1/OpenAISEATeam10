@@ -8,6 +8,7 @@ import {
   type RecommendationRequest,
 } from '@market-maker/contracts';
 import type { AiUsage, Health, Run } from './types';
+import { parseRetrievalResult } from '@market-maker/contracts/evidence';
 import {
   parseStrategyRequest,
   parsePortfolioResult,
@@ -95,6 +96,15 @@ export async function evaluate(input: EvaluationInput, signal: AbortSignal) {
 export async function recommend(body: RecommendationRequest, signal: AbortSignal) {
   return parseRecommendationResult(
     await request('/recommend', { method: 'POST', body: JSON.stringify(body), signal }),
+  );
+}
+export async function retrieveEvidence(body: RecommendationRequest, signal: AbortSignal) {
+  return parseRetrievalResult(
+    await request('/evidence/retrieve', {
+      method: 'POST',
+      body: JSON.stringify(parseRecommendationRequest(body)),
+      signal,
+    }),
   );
 }
 export async function planPortfolio(body: StrategyRequest, signal: AbortSignal) {

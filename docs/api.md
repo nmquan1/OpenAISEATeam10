@@ -6,15 +6,16 @@ This MVP has one **shared workspace and no login**. Every caller can read the sa
 
 ## Routes
 
-| Method | Path                    | Body / result                                                                                                          |
-| ------ | ----------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/api/health`           | `{status, schema_version, mode, aiConfigured, modelConfigured}`; configuration flags contain no credentials            |
-| POST   | `/api/evaluate`         | `{input}` → deterministic evaluation; saves the complete input/result                                                  |
-| POST   | `/api/recommend`        | `{input, context}` → provider candidates ranked by the same engine; saves input/result/AI metadata                     |
-| POST   | `/api/strategy`         | `{products, customers, vouchers, floor?, programme?}` → separate heuristic portfolio, not saved as a campaign forecast |
-| POST   | `/api/history/validate` | `{csv}` → `{source:"user_reported", campaigns:[...]}`; no automatic forecast calibration                               |
-| GET    | `/api/runs`             | `{runs:[...]}`; latest 50 shared runs, newest first                                                                    |
-| GET    | `/api/runs/:id`         | One saved run; UUID path parameter; missing ID returns 404                                                             |
+| Method | Path                     | Body / result                                                                                                          |
+| ------ | ------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/health`            | `{status, schema_version, mode, aiConfigured, modelConfigured}`; configuration flags contain no credentials            |
+| POST   | `/api/evaluate`          | `{input}` → deterministic evaluation; saves the complete input/result                                                  |
+| POST   | `/api/recommend`         | `{input, context}` → provider candidates ranked by the same engine; saves input/result/AI metadata                     |
+| POST   | `/api/strategy`          | `{products, customers, vouchers, floor?, programme?}` → separate heuristic portfolio, not saved as a campaign forecast |
+| POST   | `/api/evidence/retrieve` | `{input, context}` → opt-in reference preview; no provider call or saved run                                           |
+| POST   | `/api/history/validate`  | `{csv}` → `{source:"user_reported", campaigns:[...]}`; no automatic forecast calibration                               |
+| GET    | `/api/runs`              | `{runs:[...]}`; latest 50 shared runs, newest first                                                                    |
+| GET    | `/api/runs/:id`          | One saved run; UUID path parameter; missing ID returns 404                                                             |
 
 POST bodies must be JSON and fit within **32 KiB including JSON escaping/overhead**. Validation rejects unknown fields, missing required fields, numeric strings and invalid integer/rate bounds. Fastify coercion, default insertion and removal of extra fields are disabled. Domain validation additionally checks traffic ordering, stock/basket constraints and response-curve consistency.
 
@@ -61,6 +62,16 @@ Recommendation context is structured:
 ```
 
 `context` is required on recommendation requests; an empty note is `{seller_notes:""}`. History is optional, contains at most 20 campaigns and cannot claim more orders than visits. The CSV route expects exactly `label,visits,orders,revenue_dong,voucher_spend_dong`, with explicit nonnegative integers, unique normalized labels and no missing numerical cells. See `data/history-template.csv`.
+
+## Optional reference retrieval
+
+`context.reference_query` opts into local historical-reference retrieval (maximum 500 characters). Omit it or send whitespace to disable retrieval. Example context: `{seller_notes:"", reference_query:"source:cj cat litter cat food"}`. Existing notes/history remain separate; they do not implicitly trigger retrieval.
+
+`POST /api/evidence/retrieve` previews the cards without an OpenAI call. It accepts the recommendation request schema and returns `{enabled,status,dataset_version,index_sha256,retrieval_version,query,items}`. Status is `disabled`, `no_match`, `matched` or `unavailable`; at most six cards from one source are returned, with a bounded serialized character budget. Missing/corrupt packages return `unavailable` without partial cards. The route shares history's 120 requests/IP/minute process-local rate bucket.
+
+The recommendation service uses the same retrieval function and includes optional `reference_evidence` in its saved/exported result. Clients submit a query, not trusted evidence cards. References retain source/entity scope, unit/time basis, support denominators, caveats and lineage. These are foreign historical or hypothetical records; they do not change merchant costs, funding, stock, budget, CVR or response curves. Supplied reference IDs show context provenance, not proof that the model relied on them correctly.
+
+See [evidence integration](evidence-integration.md) for runnable examples and [evaluation](evidence-evaluation.md) for offline versus paid benchmark modes.
 
 ## Results and provenance
 

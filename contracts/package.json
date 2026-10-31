@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./model.ts",
-    "./portfolio": "./portfolio.ts"
+    "./portfolio": "./portfolio.ts",
+    "./evidence": "./evidence.ts"
   },
   "dependencies": {
     "@sinclair/typebox": "^0.34.52"
