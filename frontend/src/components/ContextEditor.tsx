@@ -29,8 +29,7 @@ export function ContextEditor({
     });
   return (
     <section className="card context-editor" aria-labelledby="context-heading">
-      <p className="eyebrow">02 · BỐI CẢNH NGƯỜI BÁN</p>
-      <h2 id="context-heading">Để AI hiểu điều bạn đang ưu tiên</h2>
+      <h2 id="context-heading">Nhờ AI gợi ý thêm voucher</h2>
       <label htmlFor="seller-notes">
         Ghi chú về shop và khách hàng
         <textarea

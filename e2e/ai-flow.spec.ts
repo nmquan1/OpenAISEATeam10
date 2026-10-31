@@ -24,9 +24,13 @@ async function mockAiConfigured(page: Page) {
 async function readDownload(pending: Promise<Download>) {
   return JSON.parse(await readFile((await (await pending).path())!, 'utf8'));
 }
+// The app shows one step per tab; tests switch tabs the way a user would.
+const openStep = (page: Page, name: RegExp) => page.getByRole('tab', { name }).click();
 async function openApp(page: Page) {
   await page.goto('/');
+  await openStep(page, /Kết quả/);
   await expect(page.getByRole('heading', { name: 'Bức tranh lợi nhuận của bạn' })).toBeVisible();
+  await openStep(page, /Nhờ AI/);
 }
 const aiButton = (page: Page) => page.getByRole('button', { name: 'Đề xuất bằng AI', exact: true });
 
@@ -104,9 +108,11 @@ test('Mock AI: top 5 → dashboard → export → apply → export uses the appl
   await page.getByRole('button', { name: 'Áp dụng voucher vào thiết lập' }).click();
   await expect(page.getByText(/Đã đưa voucher/)).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Bức tranh lợi nhuận của bạn' })).toBeVisible();
+  await openStep(page, /Nhập số liệu/);
   await expect(page.getByLabel('Mức giảm / giỏ (₫)')).toHaveValue(
     String(chosen.voucher.type === 'fixed' && chosen.voucher.amount_dong),
   );
+  await openStep(page, /Kết quả/);
 
   pending = page.waitForEvent('download');
   await exportButton.click();
@@ -130,6 +136,7 @@ test('AI request shows loading, can be cancelled, and keeps the simulation usabl
   await expect(page.getByRole('button', { name: 'Hủy yêu cầu AI' })).toHaveCount(0);
   await expect(aiButton(page)).toBeEnabled();
   await expect(page.getByRole('alert')).toHaveCount(0);
+  await openStep(page, /Kết quả/);
   await expect(page.getByRole('heading', { name: 'Bức tranh lợi nhuận của bạn' })).toBeVisible();
 });
 
@@ -151,5 +158,6 @@ test('AI provider error is shown with its request id and the simulation stays vi
     'Yêu cầu AI chưa thành công. Mô phỏng trước đó vẫn dùng được.',
   );
   await expect(aiButton(page)).toBeEnabled();
+  await openStep(page, /Kết quả/);
   await expect(page.getByRole('heading', { name: 'Bức tranh lợi nhuận của bạn' })).toBeVisible();
 });
